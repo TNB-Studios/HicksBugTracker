@@ -48,26 +48,21 @@ reinstall:
 build:
     cd client && npm run build
 
-# Start production server locally (after building)
+# Start production server (run on remote server)
 prod:
-    cd client && npm run build
-    cd server && NODE_ENV=production npm start
+    sudo systemctl start hicks && echo 'Hicks started'
 
-# Start production server on remote (companion)
-prod-remote:
-    ssh administrator@192.168.81.15 "sudo systemctl start hicks && echo 'Hicks started'"
+# Stop production server (run on remote server)
+prod-stop:
+    sudo systemctl stop hicks && echo 'Hicks stopped'
 
-# Stop production server on remote (companion)
-stop-prod-remote:
-    ssh administrator@192.168.81.15 "sudo systemctl stop hicks && echo 'Hicks stopped'"
+# Restart production server (run on remote server)
+prod-restart:
+    sudo systemctl restart hicks && echo 'Hicks restarted'
 
-# Restart production server on remote (companion)
-restart-prod-remote:
-    ssh administrator@192.168.81.15 "sudo systemctl restart hicks && echo 'Hicks restarted'"
-
-# Check status of production server on remote
-status-prod-remote:
-    ssh administrator@192.168.81.15 "sudo systemctl status hicks --no-pager"
+# Check production server status (run on remote server)
+prod-status:
+    sudo systemctl status hicks --no-pager
 
 # Copy data FROM Dev TO Production (overwrites production!)
 copy_from_dev:
