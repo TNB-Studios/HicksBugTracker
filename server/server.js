@@ -76,10 +76,18 @@ app.get('/api/me', (req, res) => {
   });
 });
 
+// Custom middleware to check auth for API routes (returns 401 instead of redirect)
+const requireApiAuth = (req, res, next) => {
+  if (!req.oidc.isAuthenticated()) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  next();
+};
+
 // API routes (protected)
-app.use('/api/boards', requiresAuth(), boardRoutes);
-app.use('/api', requiresAuth(), columnRoutes);
-app.use('/api', requiresAuth(), taskRoutes);
+app.use('/api/boards', requireApiAuth, boardRoutes);
+app.use('/api', requireApiAuth, columnRoutes);
+app.use('/api', requireApiAuth, taskRoutes);
 
 // Health check endpoint (public)
 app.get('/api/health', (req, res) => {
