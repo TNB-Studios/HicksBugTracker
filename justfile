@@ -1,8 +1,8 @@
 # Hicks Bug Hunt - Development Commands
 
-# MongoDB connection strings
-MONGO_DEV := "mongodb+srv://tnbdev_db_user:VgCNZL4qWs6hLZFp@hicksdb.m2fcubr.mongodb.net/hicks-dev"
-MONGO_PROD := "mongodb+srv://tnbdev_db_user:VgCNZL4qWs6hLZFp@hicksdb.m2fcubr.mongodb.net/hicks-prod"
+# MongoDB connection strings (self-hosted)
+MONGO_DEV := "mongodb://hicksAppUser:%3FBugHuntsRC00l!@192.168.81.15:27017/hicks-dev?authSource=admin"
+MONGO_PROD := "mongodb://hicksAppUser:%3FBugHuntsRC00l!@192.168.81.15:27017/hicks-prod?authSource=admin"
 
 # Start both backend and frontend servers for development
 dev:
@@ -48,10 +48,18 @@ reinstall:
 build:
     cd client && npm run build
 
-# Start production server (after building)
+# Start production server locally (after building)
 prod:
     cd client && npm run build
     cd server && NODE_ENV=production npm start
+
+# Start production server on remote (companion)
+prod-remote:
+    ssh administrator@192.168.81.15 "cd ~/HicksBugTracker/server && NODE_ENV=production node server.js"
+
+# Stop production server on remote (companion)
+stop-prod-remote:
+    -ssh administrator@192.168.81.15 "pkill -f 'node server.js'; echo 'Server stopped'"
 
 # Copy data FROM Dev TO Production (overwrites production!)
 copy_from_dev:
