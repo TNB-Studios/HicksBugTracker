@@ -31,6 +31,51 @@ body {
   font-weight: 600;
 }
 
+.user-info {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+}
+
+.user-info span {
+  font-size: 14px;
+}
+
+.login-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #0079bf;
+  color: white;
+  text-align: center;
+}
+
+.login-page h1 {
+  font-size: 2.5rem;
+  margin-bottom: 16px;
+}
+
+.login-page p {
+  font-size: 1.1rem;
+  margin-bottom: 24px;
+  opacity: 0.9;
+}
+
+.login-page .btn {
+  padding: 12px 32px;
+  font-size: 16px;
+  background: white;
+  color: #0079bf;
+}
+
+.login-page .btn:hover {
+  background: #f0f0f0;
+}
+
 .app-main {
   flex: 1;
   overflow-x: auto;

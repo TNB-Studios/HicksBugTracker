@@ -55,11 +55,19 @@ prod:
 
 # Start production server on remote (companion)
 prod-remote:
-    ssh administrator@192.168.81.15 "cd ~/HicksBugTracker/server && NODE_ENV=production node server.js"
+    ssh administrator@192.168.81.15 "sudo systemctl start hicks && echo 'Hicks started'"
 
 # Stop production server on remote (companion)
 stop-prod-remote:
-    -ssh administrator@192.168.81.15 "pkill -f 'node server.js'; echo 'Server stopped'"
+    ssh administrator@192.168.81.15 "sudo systemctl stop hicks && echo 'Hicks stopped'"
+
+# Restart production server on remote (companion)
+restart-prod-remote:
+    ssh administrator@192.168.81.15 "sudo systemctl restart hicks && echo 'Hicks restarted'"
+
+# Check status of production server on remote
+status-prod-remote:
+    ssh administrator@192.168.81.15 "sudo systemctl status hicks --no-pager"
 
 # Copy data FROM Dev TO Production (overwrites production!)
 copy_from_dev:
