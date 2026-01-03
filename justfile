@@ -48,6 +48,13 @@ reinstall:
 build:
     cd client && npm run build
 
+# Deploy latest code (run on remote server after git pull)
+deploy:
+    cd server && npm install
+    cd client && npm install && npm run build
+    sudo systemctl restart hicks
+    echo 'Deployment complete!'
+
 # Start production server (run on remote server)
 prod:
     sudo systemctl start hicks && echo 'Hicks started'
