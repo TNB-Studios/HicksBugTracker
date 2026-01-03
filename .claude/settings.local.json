@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(npm init:*)",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(curl:*)",
+      "Bash(sudo gpg:*)",
+      "Bash(sudo -n true:*)",
+      "Bash(timeout 10 npm run dev:*)",
+      "Bash(timeout 8 npm run dev:*)",
+      "Bash(node --version:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
