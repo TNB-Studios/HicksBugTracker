@@ -6,7 +6,8 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  withCredentials: true
 });
 
 // Board API
@@ -44,6 +45,12 @@ export const taskApi = {
   delete: (id) => api.delete(`/tasks/${id}`),
   addComment: (id, data) => api.post(`/tasks/${id}/comments`, data),
   deleteComment: (id, commentId) => api.delete(`/tasks/${id}/comments/${commentId}`)
+};
+
+// User API (admin only)
+export const userApi = {
+  getAll: () => api.get('/users'),
+  updatePermissions: (id, permissions) => api.put(`/users/${id}/permissions`, permissions)
 };
 
 export default api;

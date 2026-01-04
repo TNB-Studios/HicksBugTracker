@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 
 export default function BoardSelector() {
-  const { boards, currentBoard, setCurrentBoard, createBoard, deleteBoard, updateBoard } = useApp();
+  const { boards, currentBoard, setCurrentBoard, createBoard, deleteBoard, updateBoard, user } = useApp();
+  const canAdminBoards = user?.permissions?.canAdminBoards || false;
 
   const [showCreate, setShowCreate] = useState(false);
   const [newBoardName, setNewBoardName] = useState('');
@@ -75,15 +76,17 @@ export default function BoardSelector() {
           ))}
         </select>
 
-        <button
-          className="btn btn-icon"
-          onClick={() => setShowCreate(!showCreate)}
-          title="Create new board"
-        >
-          +
-        </button>
+        {canAdminBoards && (
+          <button
+            className="btn btn-icon"
+            onClick={() => setShowCreate(!showCreate)}
+            title="Create new board"
+          >
+            +
+          </button>
+        )}
 
-        {currentBoard && (
+        {currentBoard && canAdminBoards && (
           <>
             <button
               className="btn btn-icon"

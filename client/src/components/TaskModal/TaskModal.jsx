@@ -10,7 +10,8 @@ const CACHE_ASSIGNED_TO = 'hicks_lastAssignedTo';
 const CACHE_REPORTED_BY = 'hicks_lastReportedBy';
 
 export default function TaskModal({ task, onClose }) {
-  const { columns, tasks, createTask, updateTask, deleteTask, addComment, deleteComment } = useApp();
+  const { columns, tasks, createTask, updateTask, deleteTask, addComment, deleteComment, user } = useApp();
+  const canDeleteTasks = user?.permissions?.canDeleteTasks || false;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -267,7 +268,7 @@ export default function TaskModal({ task, onClose }) {
           )}
 
           <div className="modal-footer">
-            {task && (
+            {task && canDeleteTasks && (
               <button type="button" className="btn btn-danger" onClick={handleDelete}>
                 Delete Task
               </button>

@@ -10,7 +10,8 @@
       "Bash(sudo -n true:*)",
       "Bash(timeout 10 npm run dev:*)",
       "Bash(timeout 8 npm run dev:*)",
-      "Bash(node --version:*)"
+      "Bash(node --version:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

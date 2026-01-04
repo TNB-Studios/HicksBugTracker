@@ -3,7 +3,7 @@ import { boardApi, columnApi, taskApi } from '../services/api';
 
 const AppContext = createContext();
 
-export function AppProvider({ children }) {
+export function AppProvider({ children, user }) {
   const [boards, setBoards] = useState([]);
   const [currentBoard, setCurrentBoard] = useState(null);
   const [columns, setColumns] = useState([]);
@@ -367,6 +367,7 @@ export function AppProvider({ children }) {
     loading,
     error,
     filters,
+    user,
 
     // Setters
     setCurrentBoard,
