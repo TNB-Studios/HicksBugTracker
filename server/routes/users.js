@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
 
-const AUTHENTIK_API_URL = process.env.AUTHENTIK_API_URL;
-const AUTHENTIK_API_TOKEN = process.env.AUTHENTIK_API_TOKEN;
-
 // Helper to make Authentik API requests
 async function authentikFetch(endpoint, options = {}) {
-  const response = await fetch(`${AUTHENTIK_API_URL}/api/v3${endpoint}`, {
+  const apiUrl = process.env.AUTHENTIK_API_URL;
+  const apiToken = process.env.AUTHENTIK_API_TOKEN;
+
+  const response = await fetch(`${apiUrl}/api/v3${endpoint}`, {
     ...options,
     headers: {
-      'Authorization': `Bearer ${AUTHENTIK_API_TOKEN}`,
+      'Authorization': `Bearer ${apiToken}`,
       'Content-Type': 'application/json',
       ...options.headers
     }
