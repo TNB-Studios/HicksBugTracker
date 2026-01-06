@@ -4,6 +4,8 @@ const path = require('path');
 const fs = require('fs');
 const Task = require('../models/Task');
 const Column = require('../models/Column');
+const Board = require('../models/Board');
+const { processEmailRules } = require('../services/emailService');
 
 const UPLOAD_DIR = path.join(__dirname, '..', 'Uploaded_Images');
 
@@ -106,6 +108,14 @@ router.put('/tasks/:id', async (req, res, next) => {
   try {
     const { name, description, state, assignedTo, reportedBy, priority, taskType, dependsOn } = req.body;
 
+    // Get current task to detect changes
+    const currentTask = await Task.findById(req.params.id);
+    if (!currentTask) {
+      return res.status(404).json({ success: false, error: 'Task not found' });
+    }
+
+    const previousAssignee = currentTask.assignedTo;
+
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
@@ -122,8 +132,13 @@ router.put('/tasks/:id', async (req, res, next) => {
       { new: true, runValidators: true }
     );
 
-    if (!task) {
-      return res.status(404).json({ success: false, error: 'Task not found' });
+    // Check for assignee change and trigger email rules
+    if (assignedTo !== undefined && assignedTo !== previousAssignee) {
+      const board = await Board.findById(task.boardId);
+      processEmailRules('assignee_change', task, {
+        previousAssignee,
+        newAssignee: assignedTo
+      }, board).catch(err => console.error('Email rule error:', err));
     }
 
     res.json({ success: true, data: task });
@@ -149,6 +164,7 @@ router.put('/tasks/:id/move', async (req, res, next) => {
     }
 
     const oldColumnId = task.columnId;
+    const fromState = task.state;
 
     // Remove task from old column
     if (oldColumnId.toString() !== columnId.toString()) {
@@ -172,9 +188,18 @@ router.put('/tasks/:id/move', async (req, res, next) => {
 
     // Update task's columnId and state
     task.columnId = columnId;
-    // State is always derived from column name
-    task.state = newColumn.name;
+    const toState = newColumn.name;
+    task.state = toState;
     await task.save();
+
+    // Trigger email rules for state change (only if state actually changed)
+    if (fromState !== toState) {
+      const board = await Board.findById(task.boardId);
+      processEmailRules('state_change', task, {
+        fromState,
+        toState
+      }, board).catch(err => console.error('Email rule error:', err));
+    }
 
     res.json({ success: true, data: task });
   } catch (error) {
@@ -253,6 +278,13 @@ router.post('/tasks/:id/comments', async (req, res, next) => {
 
     task.comments.push({ text, author });
     await task.save();
+
+    // Trigger email rules for comment added
+    const board = await Board.findById(task.boardId);
+    processEmailRules('comment_added', task, {
+      commentText: text,
+      commentAuthor: author
+    }, board).catch(err => console.error('Email rule error:', err));
 
     res.status(201).json({ success: true, data: task });
   } catch (error) {

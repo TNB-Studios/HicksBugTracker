@@ -14,6 +14,7 @@ const taskRoutes = require('./routes/tasks');
 const userRoutes = require('./routes/users');
 const fileRoutes = require('./routes/files');
 const emailRuleRoutes = require('./routes/emailRules');
+const emailConfigRoutes = require('./routes/emailConfig');
 
 // Connect to database
 connectDB();
@@ -161,6 +162,7 @@ app.use('/api', requireApiAuth, taskRoutes);
 app.use('/api/users', requireAdmin, userRoutes);
 app.use('/api', requireApiAuth, fileRoutes);
 app.use('/api', requireApiAuth, emailRuleRoutes);
+app.use('/api/email-config', requireAdmin, emailConfigRoutes);
 
 // Serve static assets in production
 if (process.env.NODE_ENV === 'production') {

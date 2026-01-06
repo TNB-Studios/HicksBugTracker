@@ -66,6 +66,13 @@ export const emailRuleApi = {
   toggle: (boardId, id) => api.patch(`/boards/${boardId}/email-rules/${id}/toggle`)
 };
 
+// Email Config API (admin only)
+export const emailConfigApi = {
+  get: () => api.get('/email-config'),
+  update: (data) => api.put('/email-config', data),
+  test: (testRecipient) => api.post('/email-config/test', { testRecipient })
+};
+
 // File API
 export const fileApi = {
   // Upload files to a board (returns file metadata)

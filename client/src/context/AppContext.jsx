@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { boardApi, columnApi, taskApi, fileApi, emailRuleApi } from '../services/api';
+import { boardApi, columnApi, taskApi, fileApi } from '../services/api';
 
 const AppContext = createContext();
 
@@ -9,8 +9,6 @@ export function AppProvider({ children, user }) {
   const [columns, setColumns] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [boardUsers, setBoardUsers] = useState([]);
-  const [emailRules, setEmailRules] = useState([]);
-  const [pendingEmailNotification, setPendingEmailNotification] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -77,155 +75,6 @@ export function AppProvider({ children, user }) {
     }
   }, []);
 
-  // Fetch email rules for the current board
-  const fetchEmailRules = useCallback(async (boardId) => {
-    if (!boardId) return [];
-    try {
-      const response = await emailRuleApi.getAll(boardId);
-      const rules = response.data.data || [];
-      setEmailRules(rules);
-      return rules;
-    } catch (err) {
-      console.error('Error fetching email rules:', err.message);
-      return [];
-    }
-  }, []);
-
-  // Evaluate a condition against task data
-  const evaluateCondition = useCallback((condition, taskData) => {
-    const { field, operator, value } = condition;
-    let fieldValue = '';
-
-    switch (field) {
-      case 'fromState':
-        fieldValue = taskData.previousState || '';
-        break;
-      case 'toState':
-        fieldValue = taskData.newState || '';
-        break;
-      case 'priority':
-        fieldValue = taskData.task?.priority || '';
-        break;
-      case 'taskType':
-        fieldValue = taskData.task?.taskType || '';
-        break;
-      case 'assignee':
-        fieldValue = taskData.task?.assignedTo || '';
-        break;
-      case 'reporter':
-        fieldValue = taskData.task?.reportedBy || '';
-        break;
-      case 'newAssignee':
-        fieldValue = taskData.newAssignee || '';
-        break;
-      case 'previousAssignee':
-        fieldValue = taskData.previousAssignee || '';
-        break;
-      default:
-        fieldValue = '';
-    }
-
-    switch (operator) {
-      case 'equals':
-        return fieldValue.toLowerCase() === value.toLowerCase();
-      case 'not_equals':
-        return fieldValue.toLowerCase() !== value.toLowerCase();
-      case 'contains':
-        return fieldValue.toLowerCase().includes(value.toLowerCase());
-      case 'is_empty':
-        return !fieldValue || fieldValue.trim() === '';
-      case 'is_not_empty':
-        return fieldValue && fieldValue.trim() !== '';
-      default:
-        return false;
-    }
-  }, []);
-
-  // Check if a rule matches the given trigger and task data
-  const evaluateRule = useCallback((rule, triggerType, taskData) => {
-    // Check trigger type matches
-    if (rule.trigger.type !== triggerType) return false;
-
-    // Check if rule is enabled
-    if (!rule.enabled) return false;
-
-    // Evaluate conditions
-    const { conditions } = rule;
-    if (!conditions.rules || conditions.rules.length === 0) {
-      return true; // No conditions = always match
-    }
-
-    if (conditions.logic === 'AND') {
-      return conditions.rules.every(cond => evaluateCondition(cond, taskData));
-    } else {
-      return conditions.rules.some(cond => evaluateCondition(cond, taskData));
-    }
-  }, [evaluateCondition]);
-
-  // Process template variables in email content
-  const processEmailTemplate = useCallback((template, taskData, board) => {
-    if (!template) return '';
-
-    const task = taskData.task;
-    return template
-      .replace(/\{\{task\.name\}\}/g, task?.name || '')
-      .replace(/\{\{task\.description\}\}/g, task?.description || '')
-      .replace(/\{\{task\.state\}\}/g, taskData.newState || task?.state || '')
-      .replace(/\{\{task\.priority\}\}/g, task?.priority || '')
-      .replace(/\{\{task\.type\}\}/g, task?.taskType || '')
-      .replace(/\{\{task\.assignee\}\}/g, task?.assignedTo || '')
-      .replace(/\{\{task\.reporter\}\}/g, task?.reportedBy || '')
-      .replace(/\{\{task\.url\}\}/g, window.location.origin + '/?task=' + task?._id)
-      .replace(/\{\{previous\.state\}\}/g, taskData.previousState || '')
-      .replace(/\{\{previous\.assignee\}\}/g, taskData.previousAssignee || '')
-      .replace(/\{\{comment\.text\}\}/g, taskData.commentText || '')
-      .replace(/\{\{comment\.author\}\}/g, taskData.commentAuthor || '')
-      .replace(/\{\{board\.name\}\}/g, board?.name || '');
-  }, []);
-
-  // Get recipient email based on rule configuration
-  const getRecipientEmail = useCallback((rule, task) => {
-    switch (rule.email.recipientType) {
-      case 'assignee':
-        // Find user email from boardUsers
-        const assignee = boardUsers.find(u => u.name === task?.assignedTo);
-        return { name: task?.assignedTo || 'Unknown', email: assignee?.email || 'unknown@example.com' };
-      case 'reporter':
-        const reporter = boardUsers.find(u => u.name === task?.reportedBy);
-        return { name: task?.reportedBy || 'Unknown', email: reporter?.email || 'unknown@example.com' };
-      case 'specific':
-        return { name: rule.email.specificName, email: rule.email.specificEmail };
-      default:
-        return { name: 'Unknown', email: 'unknown@example.com' };
-    }
-  }, [boardUsers]);
-
-  // Evaluate all rules for a trigger and show notification if any match
-  const checkEmailRules = useCallback((triggerType, taskData) => {
-    const matchingRules = emailRules.filter(rule => evaluateRule(rule, triggerType, taskData));
-
-    if (matchingRules.length > 0) {
-      // Process the first matching rule (could extend to handle multiple)
-      const rule = matchingRules[0];
-      const recipient = getRecipientEmail(rule, taskData.task);
-      const subject = processEmailTemplate(rule.email.subject, taskData, currentBoard);
-      const body = processEmailTemplate(rule.email.body, taskData, currentBoard);
-
-      setPendingEmailNotification({
-        ruleName: rule.name,
-        recipient,
-        subject,
-        body,
-        allMatchingRules: matchingRules.length
-      });
-    }
-  }, [emailRules, evaluateRule, getRecipientEmail, processEmailTemplate, currentBoard]);
-
-  // Dismiss email notification preview
-  const dismissEmailNotification = useCallback(() => {
-    setPendingEmailNotification(null);
-  }, []);
-
   // Load boards on mount
   useEffect(() => {
     const init = async () => {
@@ -245,9 +94,8 @@ export function AppProvider({ children, user }) {
     if (currentBoardId) {
       fetchBoard(currentBoardId);
       fetchBoardUsers(currentBoardId);
-      fetchEmailRules(currentBoardId);
     }
-  }, [currentBoardId, fetchBoard, fetchBoardUsers, fetchEmailRules]);
+  }, [currentBoardId, fetchBoard, fetchBoardUsers]);
 
   // Board operations
   const createBoard = async (name, description) => {
@@ -376,24 +224,9 @@ export function AppProvider({ children, user }) {
 
   const updateTask = async (id, data) => {
     try {
-      // Get current task to detect changes
-      const currentTask = tasks.find(t => t._id === id);
-      const previousAssignee = currentTask?.assignedTo || '';
-
       const response = await taskApi.update(id, data);
       const updatedTask = response.data.data;
       setTasks(prev => prev.map(t => t._id === id ? updatedTask : t));
-
-      // Check for assignee change
-      const newAssignee = updatedTask.assignedTo || '';
-      if (previousAssignee !== newAssignee) {
-        checkEmailRules('assignee_change', {
-          task: updatedTask,
-          previousAssignee,
-          newAssignee
-        });
-      }
-
       return updatedTask;
     } catch (err) {
       setError(err.message);
@@ -411,12 +244,6 @@ export function AppProvider({ children, user }) {
       if (!task) return;
 
       const oldColumnIdStr = String(task.columnId);
-
-      // Get column names for email rule evaluation
-      const oldColumn = columns.find(c => String(c._id) === oldColumnIdStr);
-      const newColumn = columns.find(c => String(c._id) === newColumnIdStr);
-      const previousState = oldColumn?.name || '';
-      const newState = newColumn?.name || '';
 
       // Optimistic update
       setTasks(prev => prev.map(t =>
@@ -443,15 +270,6 @@ export function AppProvider({ children, user }) {
       const response = await taskApi.move(taskIdStr, newColumnIdStr, position);
       const updatedTask = response.data.data;
       setTasks(prev => prev.map(t => String(t._id) === taskIdStr ? updatedTask : t));
-
-      // Check email rules for state change (only if column actually changed)
-      if (oldColumnIdStr !== newColumnIdStr) {
-        checkEmailRules('state_change', {
-          task: updatedTask,
-          previousState,
-          newState
-        });
-      }
 
       return updatedTask;
     } catch (err) {
@@ -488,14 +306,6 @@ export function AppProvider({ children, user }) {
       const response = await taskApi.addComment(taskId, { text, author });
       const updatedTask = response.data.data;
       setTasks(prev => prev.map(t => t._id === taskId ? updatedTask : t));
-
-      // Check email rules for comment added
-      checkEmailRules('comment_added', {
-        task: updatedTask,
-        commentText: text,
-        commentAuthor: author
-      });
-
       return updatedTask;
     } catch (err) {
       setError(err.message);
@@ -639,13 +449,11 @@ export function AppProvider({ children, user }) {
     error,
     filters,
     user,
-    pendingEmailNotification,
 
     // Setters
     setCurrentBoard,
     setFilters,
     setError,
-    dismissEmailNotification,
 
     // Board operations
     fetchBoards,

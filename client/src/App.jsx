@@ -1,24 +1,11 @@
 import { useState, useEffect } from 'react';
-import { AppProvider, useApp } from './context/AppContext';
+import { AppProvider } from './context/AppContext';
 import BoardSelector from './components/BoardSelector/BoardSelector';
 import FilterPanel from './components/Filters/FilterPanel';
 import Board from './components/Board/Board';
 import ListView from './components/ListView/ListView';
 import AdminSettings from './components/AdminSettings/AdminSettings';
-import EmailNotificationPreview from './components/EmailNotificationPreview/EmailNotificationPreview';
 import './App.css';
-
-// Inner component that can use the AppContext
-function EmailNotificationHandler() {
-  const { pendingEmailNotification, dismissEmailNotification } = useApp();
-
-  return (
-    <EmailNotificationPreview
-      notification={pendingEmailNotification}
-      onDismiss={dismissEmailNotification}
-    />
-  );
-}
 
 function App() {
   const [user, setUser] = useState(null);
@@ -96,7 +83,6 @@ function App() {
         {showAdminSettings && (
           <AdminSettings user={user} onClose={() => setShowAdminSettings(false)} />
         )}
-        <EmailNotificationHandler />
       </div>
     </AppProvider>
   );

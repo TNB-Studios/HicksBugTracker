@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { userApi, boardApi } from '../../services/api';
 import BoardPermissions from './BoardPermissions';
 import EmailRulesManager from './EmailRulesManager';
+import EmailConfigSection from './EmailConfigSection';
 
 export default function AdminSettings({ user: currentUser, onClose }) {
   const showUserPermissions = currentUser?.isAdmin;
@@ -174,6 +175,17 @@ export default function AdminSettings({ user: currentUser, onClose }) {
                   <div className="admin-settings-note">
                     <p><strong>Note:</strong> Users in the "Hicks Admins" group automatically have all permissions.</p>
                   </div>
+                </div>
+              )}
+
+              {/* Email Configuration Section - Admin Only */}
+              {showUserPermissions && (
+                <div className="settings-section">
+                  <h3>Email Configuration</h3>
+                  <p className="section-description">
+                    Configure Gmail credentials for sending email notifications.
+                  </p>
+                  <EmailConfigSection />
                 </div>
               )}
 

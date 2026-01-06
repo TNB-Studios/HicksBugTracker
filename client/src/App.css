@@ -1105,3 +1105,192 @@ body {
   color: white;
   font-weight: 500;
 }
+
+/* Email Config Section */
+.email-config-section {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.email-config-form .form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  align-items: flex-end;
+}
+
+.email-config-form .form-row .form-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.email-config-form .form-group.checkbox-group {
+  display: flex;
+  align-items: center;
+  padding-bottom: 8px;
+}
+
+.email-config-form .form-group.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.email-config-form .form-group.checkbox-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
+.email-config-form .form-help {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #5e6c84;
+}
+
+.email-config-form .form-help a {
+  color: #0079bf;
+  text-decoration: none;
+}
+
+.email-config-form .form-help a:hover {
+  text-decoration: underline;
+}
+
+.email-config-form .form-actions {
+  margin: 20px 0;
+  padding-top: 16px;
+  border-top: 1px solid #dfe1e6;
+}
+
+.email-test-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #dfe1e6;
+}
+
+.email-test-section h4 {
+  font-size: 14px;
+  color: #172b4d;
+  margin-bottom: 12px;
+}
+
+.email-test-section .form-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.email-test-section .form-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.email-test-section .btn {
+  white-space: nowrap;
+}
+
+.config-meta {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #dfe1e6;
+  color: #8993a4;
+}
+
+.section-description {
+  color: #5e6c84;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+/* Messages */
+.email-config-section .message {
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.email-config-section .message.success {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.email-config-section .message.error {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.setup-guide-toggle {
+  margin-bottom: 16px;
+}
+
+.setup-guide {
+  background: #fff;
+  border: 1px solid #dfe1e6;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.setup-guide h4 {
+  margin: 0 0 16px 0;
+  color: #172b4d;
+  font-size: 16px;
+}
+
+.setup-guide ol {
+  margin: 0;
+  padding-left: 24px;
+}
+
+.setup-guide li {
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.setup-guide li:last-child {
+  margin-bottom: 0;
+}
+
+.setup-guide ul {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+}
+
+.setup-guide ul li {
+  margin-bottom: 4px;
+}
+
+.setup-guide a {
+  color: #0079bf;
+  text-decoration: none;
+}
+
+.setup-guide a:hover {
+  text-decoration: underline;
+}
+
+.setup-guide code {
+  background: #f4f5f7;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.email-config-form .file-input {
+  padding: 8px;
+  border: 1px dashed #dfe1e6;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.email-config-form .private-key-input {
+  font-family: monospace;
+  font-size: 12px;
+}
