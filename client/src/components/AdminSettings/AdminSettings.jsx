@@ -93,6 +93,7 @@ export default function AdminSettings({ user: currentUser, onClose }) {
       <div className="admin-settings-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Settings</h2>
+          <button className="modal-close" onClick={onClose}>&times;</button>
         </div>
 
         <div className="admin-settings-content">
@@ -183,10 +184,6 @@ export default function AdminSettings({ user: currentUser, onClose }) {
               </div>
             </>
           )}
-        </div>
-
-        <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={onClose}>Close</button>
         </div>
       </div>
 
