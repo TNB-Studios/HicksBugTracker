@@ -16,7 +16,8 @@ export const boardApi = {
   getOne: (id) => api.get(`/boards/${id}`),
   create: (data) => api.post('/boards', data),
   update: (id, data) => api.put(`/boards/${id}`, data),
-  delete: (id) => api.delete(`/boards/${id}`)
+  delete: (id) => api.delete(`/boards/${id}`),
+  getUsers: (id) => api.get(`/boards/${id}/users`)
 };
 
 // Column API
@@ -52,6 +53,17 @@ export const userApi = {
   getAll: () => api.get('/users'),
   updatePermissions: (id, permissions) => api.put(`/users/${id}/permissions`, permissions),
   updateAllowedBoards: (id, allowedBoards) => api.put(`/users/${id}/permissions`, { allowedBoards })
+};
+
+// Email Rules API
+export const emailRuleApi = {
+  getAll: (boardId) => api.get(`/boards/${boardId}/email-rules`),
+  getOne: (boardId, id) => api.get(`/boards/${boardId}/email-rules/${id}`),
+  create: (boardId, data) => api.post(`/boards/${boardId}/email-rules`, data),
+  update: (boardId, id, data) => api.put(`/boards/${boardId}/email-rules/${id}`, data),
+  delete: (boardId, id) => api.delete(`/boards/${boardId}/email-rules/${id}`),
+  duplicate: (boardId, id) => api.post(`/boards/${boardId}/email-rules/${id}/duplicate`),
+  toggle: (boardId, id) => api.patch(`/boards/${boardId}/email-rules/${id}/toggle`)
 };
 
 // File API

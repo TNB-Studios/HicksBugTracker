@@ -604,6 +604,12 @@ body {
   border-color: #0079bf;
 }
 
+.form-group input.read-only-field {
+  background-color: #f4f5f7;
+  color: #5e6c84;
+  cursor: not-allowed;
+}
+
 .form-row {
   display: flex;
   gap: 16px;
@@ -822,9 +828,9 @@ body {
 .admin-settings-modal {
   background: white;
   border-radius: 8px;
-  width: 100%;
-  max-width: 800px;
-  max-height: 80vh;
+  width: 95%;
+  max-width: 1000px;
+  max-height: 85vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -916,6 +922,23 @@ body {
 
 .settings-btn:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Settings Sections */
+.settings-section {
+  margin-bottom: 32px;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section h3 {
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #0079bf;
+  color: #172b4d;
+  font-size: 16px;
 }
 
 .all-boards-badge {

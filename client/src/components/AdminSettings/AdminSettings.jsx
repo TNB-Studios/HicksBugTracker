@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { userApi, boardApi } from '../../services/api';
 import BoardPermissions from './BoardPermissions';
+import EmailRulesManager from './EmailRulesManager';
 
-export default function AdminSettings({ onClose }) {
+export default function AdminSettings({ user: currentUser, onClose }) {
+  const showUserPermissions = currentUser?.isAdmin;
   const [users, setUsers] = useState([]);
   const [boards, setBoards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,12 +19,19 @@ export default function AdminSettings({ onClose }) {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [usersResponse, boardsResponse] = await Promise.all([
-        userApi.getAll(),
-        boardApi.getAll()
-      ]);
-      setUsers(usersResponse.data.data);
-      setBoards(boardsResponse.data.data);
+      // Only fetch users if admin (for user permissions section)
+      if (showUserPermissions) {
+        const [usersResponse, boardsResponse] = await Promise.all([
+          userApi.getAll(),
+          boardApi.getAll()
+        ]);
+        setUsers(usersResponse.data.data);
+        setBoards(boardsResponse.data.data);
+      } else {
+        // Non-admin only needs boards for email rules
+        const boardsResponse = await boardApi.getAll();
+        setBoards(boardsResponse.data.data);
+      }
       setError(null);
     } catch (err) {
       setError('Failed to load data: ' + err.message);
@@ -83,76 +92,97 @@ export default function AdminSettings({ onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="admin-settings-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>User Permissions</h2>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+          <h2>Settings</h2>
         </div>
 
         <div className="admin-settings-content">
           {error && <div className="error-message">{error}</div>}
 
           {loading ? (
-            <div className="loading">Loading users...</div>
+            <div className="loading">Loading...</div>
           ) : (
-            <table className="users-table">
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Email</th>
-                  <th>Admin</th>
-                  <th>Can Admin Boards</th>
-                  <th>Can Delete Tasks</th>
-                  <th>Board Access</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map(user => {
-                  const isAdmin = isUserAdmin(user);
-                  const allowedCount = user.permissions.allowedBoards?.length || 0;
-                  return (
-                    <tr key={user.id}>
-                      <td>{user.name || user.username}</td>
-                      <td>{user.email}</td>
-                      <td>
-                        {isAdmin && <span className="admin-badge-small">Admin</span>}
-                      </td>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={isAdmin || user.permissions.canAdminBoards}
-                          disabled={isAdmin || saving[user.id]}
-                          onChange={e => handlePermissionChange(user.id, 'canAdminBoards', e.target.checked)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={isAdmin || user.permissions.canDeleteTasks}
-                          disabled={isAdmin || saving[user.id]}
-                          onChange={e => handlePermissionChange(user.id, 'canDeleteTasks', e.target.checked)}
-                        />
-                      </td>
-                      <td>
-                        {isAdmin ? (
-                          <span className="all-boards-badge">All Boards</span>
-                        ) : (
-                          <button
-                            className="btn btn-small btn-secondary"
-                            onClick={() => setSelectedUser(user)}
-                          >
-                            {allowedCount} / {boards.length} boards
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
+            <>
+              {/* User Permissions Section - Admin Only */}
+              {showUserPermissions && (
+                <div className="settings-section">
+                  <h3>User Permissions</h3>
+                  <table className="users-table">
+                    <thead>
+                      <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Admin</th>
+                        <th>Can Admin Boards</th>
+                        <th>Can Delete Tasks</th>
+                        <th>Can Manage Email Rules</th>
+                        <th>Board Access</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map(user => {
+                        const isAdmin = isUserAdmin(user);
+                        const allowedCount = user.permissions.allowedBoards?.length || 0;
+                        return (
+                          <tr key={user.id}>
+                            <td>{user.name || user.username}</td>
+                            <td>{user.email}</td>
+                            <td>
+                              {isAdmin && <span className="admin-badge-small">Admin</span>}
+                            </td>
+                            <td>
+                              <input
+                                type="checkbox"
+                                checked={isAdmin || user.permissions.canAdminBoards}
+                                disabled={isAdmin || saving[user.id]}
+                                onChange={e => handlePermissionChange(user.id, 'canAdminBoards', e.target.checked)}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="checkbox"
+                                checked={isAdmin || user.permissions.canDeleteTasks}
+                                disabled={isAdmin || saving[user.id]}
+                                onChange={e => handlePermissionChange(user.id, 'canDeleteTasks', e.target.checked)}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="checkbox"
+                                checked={isAdmin || user.permissions.canManageEmailRules}
+                                disabled={isAdmin || saving[user.id]}
+                                onChange={e => handlePermissionChange(user.id, 'canManageEmailRules', e.target.checked)}
+                              />
+                            </td>
+                            <td>
+                              {isAdmin ? (
+                                <span className="all-boards-badge">All Boards</span>
+                              ) : (
+                                <button
+                                  className="btn btn-small btn-secondary"
+                                  onClick={() => setSelectedUser(user)}
+                                >
+                                  {allowedCount} / {boards.length} boards
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <div className="admin-settings-note">
+                    <p><strong>Note:</strong> Users in the "Hicks Admins" group automatically have all permissions.</p>
+                  </div>
+                </div>
+              )}
 
-          <div className="admin-settings-note">
-            <p><strong>Note:</strong> Users in the "Hicks Admins" group automatically have all permissions.</p>
-          </div>
+              {/* Email Notification Rules Section */}
+              <div className="settings-section">
+                <h3>Email Notification Rules</h3>
+                <EmailRulesManager boards={boards} />
+              </div>
+            </>
+          )}
         </div>
 
         <div className="modal-footer">

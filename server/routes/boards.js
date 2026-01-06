@@ -4,6 +4,28 @@ const Board = require('../models/Board');
 const Column = require('../models/Column');
 const Task = require('../models/Task');
 
+// Helper to make Authentik API requests
+async function authentikFetch(endpoint, options = {}) {
+  const apiUrl = process.env.AUTHENTIK_API_URL;
+  const apiToken = process.env.AUTHENTIK_API_TOKEN;
+
+  const response = await fetch(`${apiUrl}/api/v3${endpoint}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${apiToken}`,
+      'Content-Type': 'application/json',
+      ...options.headers
+    }
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Authentik API error: ${response.status} - ${error}`);
+  }
+
+  return response.json();
+}
+
 // Default columns for new boards
 const DEFAULT_COLUMNS = ['Backlog', 'Next Up', 'Working On', 'Completed', 'In Testing', 'Passed'];
 
@@ -47,6 +69,50 @@ router.get('/:id', async (req, res, next) => {
         tasks
       }
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   GET /api/boards/:id/users
+// @desc    Get users who have access to this board (admins + users with board in allowedBoards)
+router.get('/:id/users', async (req, res, next) => {
+  try {
+    const boardId = req.params.id;
+
+    // Verify board exists
+    const board = await Board.findById(boardId);
+    if (!board) {
+      return res.status(404).json({ success: false, error: 'Board not found' });
+    }
+
+    // Fetch all users from Authentik
+    const data = await authentikFetch('/core/users/?page_size=500');
+
+    // Filter to active users who can see this board
+    const boardIdStr = boardId.toString();
+    const usersWithAccess = data.results
+      .filter(user => {
+        if (!user.is_active) return false;
+
+        // Check if user is in hicks-admins group (admins see all boards)
+        const userGroups = user.groups_obj?.map(g => g.name.toLowerCase().replace(/\s+/g, '-')) || [];
+        const isAdmin = userGroups.includes('hicks-admins');
+
+        // Check if board is in user's allowedBoards (compare as strings)
+        const allowedBoards = user.attributes?.hicks_allowed_boards || [];
+        const hasAccess = allowedBoards.some(b => b.toString() === boardIdStr);
+
+        return isAdmin || hasAccess;
+      })
+      .map(user => ({
+        id: user.pk,
+        name: user.name || user.username,
+        username: user.username,
+        email: user.email
+      }));
+
+    res.json({ success: true, data: usersWithAccess });
   } catch (error) {
     next(error);
   }

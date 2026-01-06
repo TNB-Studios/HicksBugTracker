@@ -2,12 +2,15 @@ import { useState, useRef, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import TaskList from './TaskList';
 import TaskDetailsPanel from './TaskDetailsPanel';
+import TaskModal from '../TaskModal/TaskModal';
 import './ListView.css';
 
 export default function ListView() {
-  const { currentBoard, loading } = useApp();
+  const { currentBoard, loading, user } = useApp();
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [panelWidth, setPanelWidth] = useState(400); // Default width in pixels
+  const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const canCreateBoards = user?.isAdmin || user?.permissions?.canAdminBoards;
   const containerRef = useRef(null);
   const isDragging = useRef(false);
 
@@ -52,6 +55,15 @@ export default function ListView() {
   return (
     <div className="list-view" ref={containerRef}>
       <div className="list-view-content" style={{ marginRight: panelWidth }}>
+        <div className="board-header">
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowNewTaskModal(true)}
+          >
+            + New Task
+          </button>
+          <h2>{currentBoard.name}</h2>
+        </div>
         <TaskList
           selectedTaskId={selectedTaskId}
           onSelectTask={setSelectedTaskId}
@@ -67,6 +79,13 @@ export default function ListView() {
       <div className="list-view-details" style={{ width: panelWidth }}>
         <TaskDetailsPanel taskId={selectedTaskId} />
       </div>
+
+      {showNewTaskModal && (
+        <TaskModal
+          task={null}
+          onClose={() => setShowNewTaskModal(false)}
+        />
+      )}
     </div>
   );
 }

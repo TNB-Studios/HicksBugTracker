@@ -39,6 +39,7 @@ router.get('/', async (req, res, next) => {
       permissions: {
         canAdminBoards: user.attributes?.hicks_can_admin_boards || false,
         canDeleteTasks: user.attributes?.hicks_can_delete_tasks || false,
+        canManageEmailRules: user.attributes?.hicks_can_manage_email_rules || false,
         allowedBoards: user.attributes?.hicks_allowed_boards || []
       }
     }));
@@ -53,7 +54,7 @@ router.get('/', async (req, res, next) => {
 router.put('/:id/permissions', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { canAdminBoards, canDeleteTasks, allowedBoards } = req.body;
+    const { canAdminBoards, canDeleteTasks, canManageEmailRules, allowedBoards } = req.body;
 
     // First get the current user to preserve other attributes
     const user = await authentikFetch(`/core/users/${id}/`);
@@ -66,6 +67,9 @@ router.put('/:id/permissions', async (req, res, next) => {
     }
     if (canDeleteTasks !== undefined) {
       updatedAttributes.hicks_can_delete_tasks = canDeleteTasks;
+    }
+    if (canManageEmailRules !== undefined) {
+      updatedAttributes.hicks_can_manage_email_rules = canManageEmailRules;
     }
     if (allowedBoards !== undefined) {
       updatedAttributes.hicks_allowed_boards = allowedBoards;
@@ -86,6 +90,7 @@ router.put('/:id/permissions', async (req, res, next) => {
         permissions: {
           canAdminBoards: updatedAttributes.hicks_can_admin_boards || false,
           canDeleteTasks: updatedAttributes.hicks_can_delete_tasks || false,
+          canManageEmailRules: updatedAttributes.hicks_can_manage_email_rules || false,
           allowedBoards: updatedAttributes.hicks_allowed_boards || []
         }
       }

@@ -1,0 +1,151 @@
+.email-rules-manager {
+  margin-top: 8px;
+}
+
+.email-rules-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.email-rules-header .board-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.email-rules-header .board-selector label {
+  font-weight: 500;
+  color: #5e6c84;
+}
+
+.email-rules-header .board-selector select {
+  padding: 6px 12px;
+  border: 1px solid #dfe1e6;
+  border-radius: 4px;
+  font-size: 14px;
+  min-width: 200px;
+}
+
+.loading-rules {
+  text-align: center;
+  padding: 32px;
+  color: #5e6c84;
+  font-style: italic;
+}
+
+.no-rules {
+  text-align: center;
+  padding: 32px;
+  background: #f4f5f7;
+  border-radius: 6px;
+  color: #5e6c84;
+}
+
+.no-rules p {
+  margin: 8px 0;
+}
+
+.rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rule-card {
+  background: #fff;
+  border: 1px solid #dfe1e6;
+  border-radius: 6px;
+  padding: 12px 16px;
+  transition: opacity 0.2s, border-color 0.2s;
+}
+
+.rule-card:hover {
+  border-color: #0079bf;
+}
+
+.rule-card.disabled {
+  opacity: 0.6;
+  background: #f9f9f9;
+}
+
+.rule-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.rule-name {
+  flex: 1;
+  font-weight: 600;
+  color: #172b4d;
+  font-size: 15px;
+}
+
+.rule-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.rule-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: #5e6c84;
+}
+
+.rule-summary strong {
+  color: #172b4d;
+}
+
+/* Toggle Switch */
+.rule-toggle {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.rule-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #dfe1e6;
+  transition: 0.2s;
+  border-radius: 22px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.rule-toggle input:checked + .toggle-slider {
+  background-color: #61bd4f;
+}
+
+.rule-toggle input:checked + .toggle-slider:before {
+  transform: translateX(18px);
+}
+

@@ -1,0 +1,193 @@
+.email-rule-editor {
+  background: #fff;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.email-rule-editor .modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #dfe1e6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.email-rule-editor .modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #172b4d;
+}
+
+.email-rule-editor form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.editor-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0; /* Important for flex children to respect overflow */
+}
+
+.email-rule-editor .form-group {
+  margin-bottom: 20px;
+}
+
+.email-rule-editor .form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #172b4d;
+  font-size: 14px;
+}
+
+.email-rule-editor .form-hint {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #8993a4;
+}
+
+.email-rule-editor input[type="text"],
+.email-rule-editor select,
+.email-rule-editor textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #dfe1e6;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.15s;
+}
+
+.email-rule-editor input[type="text"]:focus,
+.email-rule-editor select:focus,
+.email-rule-editor textarea:focus {
+  outline: none;
+  border-color: #0079bf;
+}
+
+.email-rule-editor input.error,
+.email-rule-editor textarea.error {
+  border-color: #eb5a46;
+}
+
+.email-rule-editor .error-text {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #eb5a46;
+}
+
+/* Trigger Options */
+.trigger-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border: 1px solid #dfe1e6;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.radio-option:hover {
+  border-color: #0079bf;
+}
+
+.radio-option input[type="radio"] {
+  margin: 0;
+}
+
+.radio-option input[type="radio"]:checked + span {
+  color: #0079bf;
+  font-weight: 500;
+}
+
+/* Recipient Selector */
+.recipient-selector select {
+  width: auto;
+  min-width: 200px;
+}
+
+.specific-user-select {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.selected-email {
+  font-size: 12px;
+  color: #5e6c84;
+}
+
+/* Variables Panel */
+.label-with-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.label-with-action label {
+  margin-bottom: 0 !important;
+}
+
+.variables-panel {
+  background: #f4f5f7;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.variables-panel p {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #5e6c84;
+}
+
+.variables-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.variable-chip {
+  background: #fff;
+  border: 1px solid #dfe1e6;
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: monospace;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.variable-chip:hover {
+  border-color: #0079bf;
+  background: #e4f0f6;
+}
+
+/* Modal Footer */
+.email-rule-editor .modal-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #dfe1e6;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import FileUpload from '../FileUpload/FileUpload';
+import UserSelect from '../UserSelect/UserSelect';
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 const TYPES = ['Task', 'Bug', 'Suggestion'];
@@ -10,6 +11,7 @@ export default function TaskDetailsPanel({ taskId }) {
     columns,
     tasks,
     currentBoard,
+    boardUsers,
     updateTask,
     moveTask,
     deleteTask,
@@ -51,7 +53,6 @@ export default function TaskDetailsPanel({ taskId }) {
       formData.description !== (task.description || '') ||
       formData.columnId !== (task.columnId || '') ||
       formData.assignedTo !== (task.assignedTo || '') ||
-      formData.reportedBy !== (task.reportedBy || '') ||
       formData.priority !== (task.priority || 'Medium') ||
       formData.taskType !== (task.taskType || 'Task') ||
       formData.dependsOn !== (task.dependsOn || '')
@@ -251,12 +252,13 @@ export default function TaskDetailsPanel({ taskId }) {
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="detail-assignedTo">Assigned To</label>
-              <input
-                type="text"
+              <UserSelect
                 id="detail-assignedTo"
                 name="assignedTo"
                 value={formData.assignedTo}
                 onChange={handleChange}
+                users={boardUsers}
+                placeholder="Select or type a name..."
               />
             </div>
 
@@ -267,7 +269,8 @@ export default function TaskDetailsPanel({ taskId }) {
                 id="detail-reportedBy"
                 name="reportedBy"
                 value={formData.reportedBy}
-                onChange={handleChange}
+                readOnly
+                className="read-only-field"
               />
             </div>
           </div>

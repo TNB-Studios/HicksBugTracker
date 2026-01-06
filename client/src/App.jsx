@@ -1,11 +1,24 @@
 import { useState, useEffect } from 'react';
-import { AppProvider } from './context/AppContext';
+import { AppProvider, useApp } from './context/AppContext';
 import BoardSelector from './components/BoardSelector/BoardSelector';
 import FilterPanel from './components/Filters/FilterPanel';
 import Board from './components/Board/Board';
 import ListView from './components/ListView/ListView';
 import AdminSettings from './components/AdminSettings/AdminSettings';
+import EmailNotificationPreview from './components/EmailNotificationPreview/EmailNotificationPreview';
 import './App.css';
+
+// Inner component that can use the AppContext
+function EmailNotificationHandler() {
+  const { pendingEmailNotification, dismissEmailNotification } = useApp();
+
+  return (
+    <EmailNotificationPreview
+      notification={pendingEmailNotification}
+      onDismiss={dismissEmailNotification}
+    />
+  );
+}
 
 function App() {
   const [user, setUser] = useState(null);
@@ -68,7 +81,7 @@ function App() {
           <div className="user-info">
             <span>{user.name || user.email}</span>
             {user.isAdmin && <span className="admin-badge">Admin</span>}
-            {user.isAdmin && (
+            {(user.isAdmin || user.permissions?.canManageEmailRules) && (
               <button className="settings-btn" onClick={() => setShowAdminSettings(true)}>
                 Settings
               </button>
@@ -81,8 +94,9 @@ function App() {
           {viewMode === 'board' ? <Board /> : <ListView />}
         </main>
         {showAdminSettings && (
-          <AdminSettings onClose={() => setShowAdminSettings(false)} />
+          <AdminSettings user={user} onClose={() => setShowAdminSettings(false)} />
         )}
+        <EmailNotificationHandler />
       </div>
     </AppProvider>
   );

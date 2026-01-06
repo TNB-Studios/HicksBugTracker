@@ -1,19 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import FileUpload from '../FileUpload/FileUpload';
+import UserSelect from '../UserSelect/UserSelect';
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 const TYPES = ['Task', 'Bug', 'Suggestion'];
 
-// Cache keys for localStorage
+// Cache key for localStorage
 const CACHE_ASSIGNED_TO = 'hicks_lastAssignedTo';
-const CACHE_REPORTED_BY = 'hicks_lastReportedBy';
 
 export default function TaskModal({ task: taskProp, onClose }) {
   const {
     columns,
     tasks,
     currentBoard,
+    boardUsers,
     createTask,
     updateTask,
     moveTask,
@@ -53,7 +54,6 @@ export default function TaskModal({ task: taskProp, onClose }) {
       formData.description !== (task.description || '') ||
       formData.columnId !== (task.columnId || '') ||
       formData.assignedTo !== (task.assignedTo || '') ||
-      formData.reportedBy !== (task.reportedBy || '') ||
       formData.priority !== (task.priority || 'Medium') ||
       formData.taskType !== (task.taskType || 'Task') ||
       formData.dependsOn !== (task.dependsOn || '')
@@ -77,17 +77,16 @@ export default function TaskModal({ task: taskProp, onClose }) {
         dependsOn: task.dependsOn || ''
       });
     } else if (columns.length > 0) {
-      // New task - use cached values
+      // New task - use cached assignedTo, auto-fill reportedBy with logged-in user
       const cachedAssignedTo = localStorage.getItem(CACHE_ASSIGNED_TO) || '';
-      const cachedReportedBy = localStorage.getItem(CACHE_REPORTED_BY) || '';
       setFormData(prev => ({
         ...prev,
         columnId: columns[0]._id,
         assignedTo: cachedAssignedTo,
-        reportedBy: cachedReportedBy
+        reportedBy: user?.name || user?.email || ''
       }));
     }
-  }, [task, columns]);
+  }, [task, columns, user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -103,12 +102,9 @@ export default function TaskModal({ task: taskProp, onClose }) {
     }
 
     try {
-      // Cache assignedTo and reportedBy for next time
+      // Cache assignedTo for next time
       if (formData.assignedTo) {
         localStorage.setItem(CACHE_ASSIGNED_TO, formData.assignedTo);
-      }
-      if (formData.reportedBy) {
-        localStorage.setItem(CACHE_REPORTED_BY, formData.reportedBy);
       }
 
       if (task) {
@@ -268,12 +264,13 @@ export default function TaskModal({ task: taskProp, onClose }) {
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="assignedTo">Assigned To</label>
-              <input
-                type="text"
+              <UserSelect
                 id="assignedTo"
                 name="assignedTo"
                 value={formData.assignedTo}
                 onChange={handleChange}
+                users={boardUsers}
+                placeholder="Select or type a name..."
               />
             </div>
 
@@ -284,7 +281,8 @@ export default function TaskModal({ task: taskProp, onClose }) {
                 id="reportedBy"
                 name="reportedBy"
                 value={formData.reportedBy}
-                onChange={handleChange}
+                readOnly
+                className="read-only-field"
               />
             </div>
           </div>
@@ -350,16 +348,11 @@ export default function TaskModal({ task: taskProp, onClose }) {
                 </div>
               </>
             ) : (
-              <>
-                <button type="button" className="btn btn-secondary" onClick={onClose}>
-                  Cancel
+              <div className="modal-footer-right">
+                <button type="submit" className="btn btn-primary">
+                  Create Task
                 </button>
-                <div className="modal-footer-right">
-                  <button type="submit" className="btn btn-primary">
-                    Create Task
-                  </button>
-                </div>
-              </>
+              </div>
             )}
           </div>
         </form>
