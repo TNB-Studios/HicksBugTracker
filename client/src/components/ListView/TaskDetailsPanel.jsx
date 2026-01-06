@@ -178,7 +178,14 @@ export default function TaskDetailsPanel({ taskId }) {
     <div className="task-details-panel">
       <div className="task-details-header">
         <h3>Task Details</h3>
-        {saving && <span className="saving-indicator">Saving...</span>}
+        <div className="task-details-header-right">
+          {saving && <span className="saving-indicator">Saving...</span>}
+          {isDirty && (
+            <button className="btn btn-primary" onClick={handleSave}>
+              Save Changes
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="task-details-body">
@@ -316,20 +323,6 @@ export default function TaskDetailsPanel({ taskId }) {
             </div>
           )}
 
-          <div className="task-details-actions">
-            {canDeleteTasks && (
-              <button className="btn btn-danger" onClick={handleDelete}>
-                Delete Task
-              </button>
-            )}
-            <div className="task-details-actions-right">
-              {isDirty && (
-                <button className="btn btn-primary" onClick={handleSave}>
-                  Save Changes
-                </button>
-              )}
-            </div>
-          </div>
         </div>
 
         <div className="task-details-comments">
@@ -390,6 +383,14 @@ export default function TaskDetailsPanel({ taskId }) {
             </button>
           </div>
         </div>
+
+        {canDeleteTasks && (
+          <div className="task-details-footer-centered">
+            <button className="btn btn-danger" onClick={handleDelete}>
+              Delete Task
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

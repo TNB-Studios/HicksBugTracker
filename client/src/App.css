@@ -557,6 +557,13 @@ body {
   font-size: 1.25rem;
 }
 
+.modal-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
 .modal-close {
   background: none;
   border: none;
@@ -643,6 +650,14 @@ body {
 .modal-footer-right {
   display: flex;
   gap: 8px;
+}
+
+.modal-footer-centered {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #dfe1e6;
 }
 
 /* Comments */

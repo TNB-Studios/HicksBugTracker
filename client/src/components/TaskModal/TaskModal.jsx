@@ -189,7 +189,20 @@ export default function TaskModal({ task: taskProp, onClose }) {
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{task ? 'Edit Task' : 'New Task'}</h2>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+          <div className="modal-header-right">
+            {task ? (
+              isDirty && (
+                <button type="button" className="btn btn-primary" onClick={handleSubmit}>
+                  Save Changes
+                </button>
+              )
+            ) : (
+              <button type="button" className="btn btn-primary" onClick={handleSubmit}>
+                Create Task
+              </button>
+            )}
+            <button className="modal-close" onClick={onClose}>&times;</button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -331,30 +344,6 @@ export default function TaskModal({ task: taskProp, onClose }) {
             </div>
           )}
 
-          <div className="modal-footer">
-            {task ? (
-              <>
-                {canDeleteTasks && (
-                  <button type="button" className="btn btn-danger" onClick={handleDelete}>
-                    Delete Task
-                  </button>
-                )}
-                <div className="modal-footer-right">
-                  {isDirty && (
-                    <button type="submit" className="btn btn-primary">
-                      Save Changes
-                    </button>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="modal-footer-right">
-                <button type="submit" className="btn btn-primary">
-                  Create Task
-                </button>
-              </div>
-            )}
-          </div>
         </form>
 
         {task && (
@@ -413,6 +402,14 @@ export default function TaskModal({ task: taskProp, onClose }) {
                 Add Comment
               </button>
             </div>
+          </div>
+        )}
+
+        {task && canDeleteTasks && (
+          <div className="modal-footer-centered">
+            <button type="button" className="btn btn-danger" onClick={handleDelete}>
+              Delete Task
+            </button>
           </div>
         )}
       </div>

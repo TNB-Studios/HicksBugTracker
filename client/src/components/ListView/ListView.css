@@ -254,6 +254,13 @@
   font-weight: 500;
 }
 
+.task-details-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
 .task-details-body {
   flex: 1;
   overflow-y: auto;
@@ -327,6 +334,14 @@
 
 .task-details-actions-right {
   margin-left: auto;
+}
+
+.task-details-footer-centered {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  border-top: 1px solid #eee;
+  margin-top: auto;
 }
 
 .task-details-empty {
