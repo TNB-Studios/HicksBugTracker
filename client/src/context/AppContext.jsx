@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { boardApi, columnApi, taskApi } from '../services/api';
+import { boardApi, columnApi, taskApi, fileApi } from '../services/api';
 
 const AppContext = createContext();
 
@@ -309,6 +309,55 @@ export function AppProvider({ children, user }) {
     }
   };
 
+  // File operations
+  const attachFilesToTask = async (taskId, files) => {
+    try {
+      const response = await fileApi.attachToTask(taskId, files);
+      const updatedTask = response.data.data;
+      setTasks(prev => prev.map(t => t._id === taskId ? updatedTask : t));
+      return updatedTask;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  const removeFileFromTask = async (taskId, fileId) => {
+    try {
+      const response = await fileApi.removeFromTask(taskId, fileId);
+      const updatedTask = response.data.data;
+      setTasks(prev => prev.map(t => t._id === taskId ? updatedTask : t));
+      return updatedTask;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  const attachFilesToComment = async (taskId, commentId, files) => {
+    try {
+      const response = await fileApi.attachToComment(taskId, commentId, files);
+      const updatedTask = response.data.data;
+      setTasks(prev => prev.map(t => t._id === taskId ? updatedTask : t));
+      return updatedTask;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  const removeFileFromComment = async (taskId, commentId, fileId) => {
+    try {
+      const response = await fileApi.removeFromComment(taskId, commentId, fileId);
+      const updatedTask = response.data.data;
+      setTasks(prev => prev.map(t => t._id === taskId ? updatedTask : t));
+      return updatedTask;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
   // Sort tasks by dependency (parent tasks come before their dependents)
   const sortTasksByDependency = useCallback((tasksToSort) => {
     // Build a map of task ID to task for quick lookup
@@ -408,7 +457,13 @@ export function AppProvider({ children, user }) {
     deleteTask,
     addComment,
     deleteComment,
-    getFilteredTasks
+    getFilteredTasks,
+
+    // File operations
+    attachFilesToTask,
+    removeFileFromTask,
+    attachFilesToComment,
+    removeFileFromComment
   };
 
   return (

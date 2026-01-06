@@ -1,5 +1,27 @@
 const mongoose = require('mongoose');
 
+const fileSchema = new mongoose.Schema(
+  {
+    fileId: {
+      type: String,
+      required: true
+    },
+    originalName: {
+      type: String,
+      required: true
+    },
+    mimeType: {
+      type: String
+    },
+    size: {
+      type: Number
+    }
+  },
+  {
+    _id: false
+  }
+);
+
 const commentSchema = new mongoose.Schema(
   {
     text: {
@@ -11,6 +33,11 @@ const commentSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: 'Anonymous'
+    },
+    files: {
+      type: [fileSchema],
+      default: [],
+      validate: [arr => arr.length <= 4, 'Maximum 4 files per comment']
     }
   },
   {
@@ -67,6 +94,11 @@ const taskSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Task',
       default: null
+    },
+    files: {
+      type: [fileSchema],
+      default: [],
+      validate: [arr => arr.length <= 4, 'Maximum 4 files per task']
     }
   },
   {

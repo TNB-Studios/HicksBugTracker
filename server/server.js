@@ -12,6 +12,7 @@ const boardRoutes = require('./routes/boards');
 const columnRoutes = require('./routes/columns');
 const taskRoutes = require('./routes/tasks');
 const userRoutes = require('./routes/users');
+const fileRoutes = require('./routes/files');
 
 // Connect to database
 connectDB();
@@ -156,6 +157,7 @@ app.use('/api/boards', requireApiAuth, boardRoutes);
 app.use('/api', requireApiAuth, columnRoutes);
 app.use('/api', requireApiAuth, taskRoutes);
 app.use('/api/users', requireAdmin, userRoutes);
+app.use('/api', requireApiAuth, fileRoutes);
 
 // Serve static assets in production
 if (process.env.NODE_ENV === 'production') {

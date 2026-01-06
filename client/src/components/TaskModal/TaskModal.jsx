@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import FileUpload from '../FileUpload/FileUpload';
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 const TYPES = ['Task', 'Bug', 'Suggestion'];
@@ -8,9 +9,27 @@ const TYPES = ['Task', 'Bug', 'Suggestion'];
 const CACHE_ASSIGNED_TO = 'hicks_lastAssignedTo';
 const CACHE_REPORTED_BY = 'hicks_lastReportedBy';
 
-export default function TaskModal({ task, onClose }) {
-  const { columns, tasks, createTask, updateTask, moveTask, deleteTask, addComment, deleteComment, user } = useApp();
+export default function TaskModal({ task: taskProp, onClose }) {
+  const {
+    columns,
+    tasks,
+    currentBoard,
+    createTask,
+    updateTask,
+    moveTask,
+    deleteTask,
+    addComment,
+    deleteComment,
+    attachFilesToTask,
+    removeFileFromTask,
+    attachFilesToComment,
+    removeFileFromComment,
+    user
+  } = useApp();
   const canDeleteTasks = user?.permissions?.canDeleteTasks || false;
+
+  // Get live task from context (updates when files/comments change)
+  const task = taskProp ? tasks.find(t => t._id === taskProp._id) || taskProp : null;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -143,6 +162,32 @@ export default function TaskModal({ task, onClose }) {
     return new Date(dateString).toLocaleString();
   };
 
+  // File upload handlers for task
+  const handleTaskFilesUploaded = async (uploadedFiles) => {
+    if (task) {
+      await attachFilesToTask(task._id, uploadedFiles);
+    }
+  };
+
+  const handleTaskFileRemove = async (fileId) => {
+    if (task) {
+      await removeFileFromTask(task._id, fileId);
+    }
+  };
+
+  // File upload handlers for comments
+  const handleCommentFilesUploaded = async (commentId, uploadedFiles) => {
+    if (task) {
+      await attachFilesToComment(task._id, commentId, uploadedFiles);
+    }
+  };
+
+  const handleCommentFileRemove = async (commentId, fileId) => {
+    if (task) {
+      await removeFileFromComment(task._id, commentId, fileId);
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -270,6 +315,24 @@ export default function TaskModal({ task, onClose }) {
             </div>
           )}
 
+          {task && currentBoard && (
+            <div className="form-group">
+              <label>Attachments</label>
+              <FileUpload
+                boardId={currentBoard._id}
+                files={task.files || []}
+                onUploadComplete={handleTaskFilesUploaded}
+                onFilesChange={(newFiles) => {
+                  // Find removed files and delete them
+                  const currentFileIds = (task.files || []).map(f => f.fileId);
+                  const newFileIds = newFiles.map(f => f.fileId);
+                  const removedFileIds = currentFileIds.filter(id => !newFileIds.includes(id));
+                  removedFileIds.forEach(fileId => handleTaskFileRemove(fileId));
+                }}
+              />
+            </div>
+          )}
+
           <div className="modal-footer">
             {task ? (
               <>
@@ -319,6 +382,19 @@ export default function TaskModal({ task, onClose }) {
                     </button>
                   </div>
                   <p>{comment.text}</p>
+                  {currentBoard && (
+                    <FileUpload
+                      boardId={currentBoard._id}
+                      files={comment.files || []}
+                      onUploadComplete={(uploadedFiles) => handleCommentFilesUploaded(comment._id, uploadedFiles)}
+                      onFilesChange={(newFiles) => {
+                        const currentFileIds = (comment.files || []).map(f => f.fileId);
+                        const newFileIds = newFiles.map(f => f.fileId);
+                        const removedFileIds = currentFileIds.filter(id => !newFileIds.includes(id));
+                        removedFileIds.forEach(fileId => handleCommentFileRemove(comment._id, fileId));
+                      }}
+                    />
+                  )}
                 </div>
               ))}
             </div>

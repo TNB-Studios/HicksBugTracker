@@ -39,3 +39,6 @@ coverage/
 # Misc
 *.tgz
 .cache/
+
+# Uploaded files
+server/Uploaded_Images/

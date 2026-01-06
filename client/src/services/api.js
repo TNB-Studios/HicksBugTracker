@@ -54,4 +54,28 @@ export const userApi = {
   updateAllowedBoards: (id, allowedBoards) => api.put(`/users/${id}/permissions`, { allowedBoards })
 };
 
+// File API
+export const fileApi = {
+  // Upload files to a board (returns file metadata)
+  upload: (boardId, files) => {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+    return api.post(`/boards/${boardId}/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  // Attach uploaded files to a task
+  attachToTask: (taskId, files) => api.post(`/tasks/${taskId}/files`, { files }),
+  // Remove a file from a task
+  removeFromTask: (taskId, fileId) => api.delete(`/tasks/${taskId}/files/${fileId}`),
+  // Attach uploaded files to a comment
+  attachToComment: (taskId, commentId, files) =>
+    api.post(`/tasks/${taskId}/comments/${commentId}/files`, { files }),
+  // Remove a file from a comment
+  removeFromComment: (taskId, commentId, fileId) =>
+    api.delete(`/tasks/${taskId}/comments/${commentId}/files/${fileId}`),
+  // Get file URL
+  getUrl: (boardId, fileId) => `${API_BASE_URL}/boards/${boardId}/files/${fileId}`
+};
+
 export default api;

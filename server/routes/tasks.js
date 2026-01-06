@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const fs = require('fs');
 const Task = require('../models/Task');
 const Column = require('../models/Column');
+
+const UPLOAD_DIR = path.join(__dirname, '..', 'Uploaded_Images');
 
 // @route   GET /api/boards/:boardId/tasks
 // @desc    Get all tasks for a board (with optional filters)
@@ -178,6 +182,22 @@ router.put('/tasks/:id/move', async (req, res, next) => {
   }
 });
 
+// Helper to delete a file from the upload directory
+const deleteUploadedFile = (boardId, fileId) => {
+  try {
+    const boardDir = path.join(UPLOAD_DIR, boardId.toString());
+    if (!fs.existsSync(boardDir)) return;
+
+    const files = fs.readdirSync(boardDir);
+    const physicalFile = files.find(f => f.startsWith(fileId));
+    if (physicalFile) {
+      fs.unlinkSync(path.join(boardDir, physicalFile));
+    }
+  } catch (err) {
+    console.error(`Error deleting file ${fileId}:`, err.message);
+  }
+};
+
 // @route   DELETE /api/tasks/:id
 // @desc    Delete a task
 router.delete('/tasks/:id', async (req, res, next) => {
@@ -192,6 +212,24 @@ router.delete('/tasks/:id', async (req, res, next) => {
     await Column.findByIdAndUpdate(task.columnId, {
       $pull: { taskIds: task._id }
     });
+
+    // Delete all files attached to the task
+    if (task.files && task.files.length > 0) {
+      task.files.forEach(file => {
+        deleteUploadedFile(task.boardId, file.fileId);
+      });
+    }
+
+    // Delete all files attached to comments
+    if (task.comments && task.comments.length > 0) {
+      task.comments.forEach(comment => {
+        if (comment.files && comment.files.length > 0) {
+          comment.files.forEach(file => {
+            deleteUploadedFile(task.boardId, file.fileId);
+          });
+        }
+      });
+    }
 
     // Delete the task
     await task.deleteOne();
@@ -229,6 +267,18 @@ router.delete('/tasks/:id/comments/:commentId', async (req, res, next) => {
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ success: false, error: 'Task not found' });
+    }
+
+    // Find the comment to delete its files
+    const commentToDelete = task.comments.find(
+      comment => comment._id.toString() === req.params.commentId
+    );
+
+    // Delete comment's files from disk
+    if (commentToDelete && commentToDelete.files && commentToDelete.files.length > 0) {
+      commentToDelete.files.forEach(file => {
+        deleteUploadedFile(task.boardId, file.fileId);
+      });
     }
 
     task.comments = task.comments.filter(

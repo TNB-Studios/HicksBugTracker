@@ -1,0 +1,264 @@
+.file-upload {
+  margin-top: 12px;
+}
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f4f5f7;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.file-icon {
+  flex-shrink: 0;
+}
+
+.file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #172b4d;
+}
+
+.file-size {
+  flex-shrink: 0;
+  color: #8993a4;
+  font-size: 12px;
+}
+
+.file-delete {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #8993a4;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.file-delete:hover {
+  color: #eb5a46;
+}
+
+.file-dropzone {
+  border: 2px dashed #dfe1e6;
+  border-radius: 6px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.2s;
+  background: #fafbfc;
+}
+
+.file-dropzone.dragging {
+  border-color: #2196f3;
+  background: #e3f2fd;
+}
+
+.file-dropzone.uploading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.dropzone-text {
+  display: block;
+  color: #5e6c84;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.dropzone-hint {
+  display: block;
+  color: #8993a4;
+  font-size: 11px;
+}
+
+.file-browse-btn {
+  background: none;
+  border: none;
+  color: #0079bf;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.file-browse-btn:hover {
+  color: #005a8c;
+}
+
+.upload-status {
+  color: #2196f3;
+  font-size: 13px;
+}
+
+.file-error {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #ffebe6;
+  border: 1px solid #eb5a46;
+  border-radius: 4px;
+  color: #ae2a19;
+  font-size: 12px;
+}
+
+/* Image/Video thumbnail styles */
+.file-item-media {
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px;
+}
+
+.file-item-image {
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px;
+}
+
+.file-thumbnail {
+  width: 100%;
+}
+
+.file-thumbnail img {
+  display: block;
+  border-radius: 4px;
+  max-width: 100%;
+}
+
+.file-thumbnail-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.file-thumbnail-info .file-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-thumbnail-info .file-size {
+  flex-shrink: 0;
+}
+
+.file-thumbnail-info .file-delete {
+  flex-shrink: 0;
+}
+
+/* Audio play button */
+.audio-play-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: #0079bf;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.audio-play-btn:hover {
+  background: #005a8c;
+}
+
+.audio-play-btn.playing {
+  background: #eb5a46;
+}
+
+.audio-play-btn.playing:hover {
+  background: #c9372c;
+}
+
+/* Video styles */
+.file-video {
+  width: 100%;
+}
+
+.file-video video {
+  display: block;
+  border-radius: 4px;
+  max-width: 100%;
+}
+
+.video-fullscreen-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: #0079bf;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.video-fullscreen-btn:hover {
+  background: #005a8c;
+}
+
+/* Fullscreen overlay */
+.fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  cursor: pointer;
+}
+
+.fullscreen-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  z-index: 10001;
+}
+
+.fullscreen-close:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.fullscreen-media {
+  max-width: 95vw;
+  max-height: 95vh;
+  object-fit: contain;
+  cursor: default;
+}

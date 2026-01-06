@@ -1,11 +1,26 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import FileUpload from '../FileUpload/FileUpload';
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 const TYPES = ['Task', 'Bug', 'Suggestion'];
 
 export default function TaskDetailsPanel({ taskId }) {
-  const { columns, tasks, updateTask, moveTask, deleteTask, addComment, deleteComment, user } = useApp();
+  const {
+    columns,
+    tasks,
+    currentBoard,
+    updateTask,
+    moveTask,
+    deleteTask,
+    addComment,
+    deleteComment,
+    attachFilesToTask,
+    removeFileFromTask,
+    attachFilesToComment,
+    removeFileFromComment,
+    user
+  } = useApp();
   const canDeleteTasks = user?.permissions?.canDeleteTasks || false;
 
   const task = tasks.find(t => t._id === taskId);
@@ -114,6 +129,32 @@ export default function TaskDetailsPanel({ taskId }) {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString();
+  };
+
+  // File upload handlers for task
+  const handleTaskFilesUploaded = async (uploadedFiles) => {
+    if (task) {
+      await attachFilesToTask(task._id, uploadedFiles);
+    }
+  };
+
+  const handleTaskFileRemove = async (fileId) => {
+    if (task) {
+      await removeFileFromTask(task._id, fileId);
+    }
+  };
+
+  // File upload handlers for comments
+  const handleCommentFilesUploaded = async (commentId, uploadedFiles) => {
+    if (task) {
+      await attachFilesToComment(task._id, commentId, uploadedFiles);
+    }
+  };
+
+  const handleCommentFileRemove = async (commentId, fileId) => {
+    if (task) {
+      await removeFileFromComment(task._id, commentId, fileId);
+    }
   };
 
   if (!taskId) {
@@ -255,6 +296,23 @@ export default function TaskDetailsPanel({ taskId }) {
             )}
           </div>
 
+          {currentBoard && (
+            <div className="form-group">
+              <label>Attachments</label>
+              <FileUpload
+                boardId={currentBoard._id}
+                files={task.files || []}
+                onUploadComplete={handleTaskFilesUploaded}
+                onFilesChange={(newFiles) => {
+                  const currentFileIds = (task.files || []).map(f => f.fileId);
+                  const newFileIds = newFiles.map(f => f.fileId);
+                  const removedFileIds = currentFileIds.filter(id => !newFileIds.includes(id));
+                  removedFileIds.forEach(fileId => handleTaskFileRemove(fileId));
+                }}
+              />
+            </div>
+          )}
+
           <div className="task-details-actions">
             {canDeleteTasks && (
               <button className="btn btn-danger" onClick={handleDelete}>
@@ -288,6 +346,19 @@ export default function TaskDetailsPanel({ taskId }) {
                   </button>
                 </div>
                 <p>{comment.text}</p>
+                {currentBoard && (
+                  <FileUpload
+                    boardId={currentBoard._id}
+                    files={comment.files || []}
+                    onUploadComplete={(uploadedFiles) => handleCommentFilesUploaded(comment._id, uploadedFiles)}
+                    onFilesChange={(newFiles) => {
+                      const currentFileIds = (comment.files || []).map(f => f.fileId);
+                      const newFileIds = newFiles.map(f => f.fileId);
+                      const removedFileIds = currentFileIds.filter(id => !newFileIds.includes(id));
+                      removedFileIds.forEach(fileId => handleCommentFileRemove(comment._id, fileId));
+                    }}
+                  />
+                )}
               </div>
             ))}
             {(!task.comments || task.comments.length === 0) && (
