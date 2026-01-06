@@ -61,8 +61,11 @@ export default function BoardSelector() {
         <select
           value={currentBoard?._id || ''}
           onChange={(e) => {
-            const board = boards.find(b => b._id === e.target.value);
-            setCurrentBoard(board);
+            const selectedId = e.target.value;
+            const board = boards.find(b => String(b._id) === selectedId);
+            if (board) {
+              setCurrentBoard(board);
+            }
           }}
           className="board-dropdown"
         >

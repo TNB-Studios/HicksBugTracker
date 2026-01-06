@@ -33,6 +33,16 @@ backend:
 frontend:
     cd client && npm run dev
 
+# Stop development servers
+dev-stop:
+    #!/usr/bin/env bash
+    echo "Stopping development servers..."
+    # Kill only this project's backend (nodemon running server.js)
+    pkill -f "nodemon.*server/server.js" 2>/dev/null && echo "Backend stopped" || echo "Backend not running"
+    # Kill only this project's frontend (vite in the client directory)
+    pkill -f "Hicks/client.*vite" 2>/dev/null && echo "Frontend stopped" || echo "Frontend not running"
+    echo "Done"
+
 # Install all dependencies
 install:
     cd server && npm install

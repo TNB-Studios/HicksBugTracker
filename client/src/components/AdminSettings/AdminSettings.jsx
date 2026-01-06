@@ -1,27 +1,49 @@
 import { useState, useEffect } from 'react';
-import { userApi } from '../../services/api';
+import { userApi, boardApi } from '../../services/api';
+import BoardPermissions from './BoardPermissions';
 
 export default function AdminSettings({ onClose }) {
   const [users, setUsers] = useState([]);
+  const [boards, setBoards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState({});
+  const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => {
-    loadUsers();
+    loadData();
   }, []);
 
-  const loadUsers = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const response = await userApi.getAll();
-      setUsers(response.data.data);
+      const [usersResponse, boardsResponse] = await Promise.all([
+        userApi.getAll(),
+        boardApi.getAll()
+      ]);
+      setUsers(usersResponse.data.data);
+      setBoards(boardsResponse.data.data);
       setError(null);
     } catch (err) {
-      setError('Failed to load users: ' + err.message);
+      setError('Failed to load data: ' + err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBoardPermissionsUpdate = (userId, allowedBoards) => {
+    // Update users array
+    setUsers(prev => prev.map(u =>
+      u.id === userId
+        ? { ...u, permissions: { ...u.permissions, allowedBoards } }
+        : u
+    ));
+    // Also update selectedUser so the modal UI refreshes
+    setSelectedUser(prev =>
+      prev && prev.id === userId
+        ? { ...prev, permissions: { ...prev.permissions, allowedBoards } }
+        : prev
+    );
   };
 
   const handlePermissionChange = async (userId, permission, value) => {
@@ -79,11 +101,13 @@ export default function AdminSettings({ onClose }) {
                   <th>Admin</th>
                   <th>Can Admin Boards</th>
                   <th>Can Delete Tasks</th>
+                  <th>Board Access</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map(user => {
                   const isAdmin = isUserAdmin(user);
+                  const allowedCount = user.permissions.allowedBoards?.length || 0;
                   return (
                     <tr key={user.id}>
                       <td>{user.name || user.username}</td>
@@ -107,6 +131,18 @@ export default function AdminSettings({ onClose }) {
                           onChange={e => handlePermissionChange(user.id, 'canDeleteTasks', e.target.checked)}
                         />
                       </td>
+                      <td>
+                        {isAdmin ? (
+                          <span className="all-boards-badge">All Boards</span>
+                        ) : (
+                          <button
+                            className="btn btn-small btn-secondary"
+                            onClick={() => setSelectedUser(user)}
+                          >
+                            {allowedCount} / {boards.length} boards
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
@@ -123,6 +159,28 @@ export default function AdminSettings({ onClose }) {
           <button className="btn btn-secondary" onClick={onClose}>Close</button>
         </div>
       </div>
+
+      {selectedUser && (
+        <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
+          <div className="board-permissions-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Board Access: {selectedUser.name || selectedUser.username}</h2>
+              <button className="modal-close" onClick={() => setSelectedUser(null)}>&times;</button>
+            </div>
+            <div className="board-permissions-content">
+              <p className="board-permissions-help">Drag boards between columns to allow or disallow access.</p>
+              <BoardPermissions
+                user={selectedUser}
+                boards={boards}
+                onUpdate={handleBoardPermissionsUpdate}
+              />
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setSelectedUser(null)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

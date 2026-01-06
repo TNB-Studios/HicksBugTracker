@@ -896,3 +896,116 @@ body {
 .settings-btn:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+.all-boards-badge {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* Board Permissions Modal */
+.board-permissions-modal {
+  background: white;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.board-permissions-content {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.board-permissions-help {
+  color: #5e6c84;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.board-permissions-columns {
+  display: flex;
+  gap: 16px;
+}
+
+.board-list {
+  flex: 1;
+  min-height: 200px;
+  border: 2px dashed #dfe1e6;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f9fafb;
+}
+
+.board-list.disallowed {
+  border-color: #ffcdd2;
+  background: #fff8f8;
+}
+
+.board-list.allowed {
+  border-color: #c8e6c9;
+  background: #f8fff8;
+}
+
+.board-list h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #5e6c84;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.board-list.disallowed h4 {
+  color: #c62828;
+}
+
+.board-list.allowed h4 {
+  color: #2e7d32;
+}
+
+.board-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 150px;
+}
+
+.board-item {
+  background: white;
+  padding: 10px 12px;
+  border-radius: 4px;
+  border: 1px solid #dfe1e6;
+  cursor: grab;
+  font-size: 14px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.board-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.board-item:active {
+  cursor: grabbing;
+  transform: scale(1.02);
+}
+
+.board-list-empty {
+  color: #8993a4;
+  font-size: 13px;
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+}
+
+.board-permissions-saving {
+  text-align: center;
+  color: #5e6c84;
+  font-size: 13px;
+  margin-top: 12px;
+}

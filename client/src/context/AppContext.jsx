@@ -19,17 +19,25 @@ export function AppProvider({ children, user }) {
     search: ''
   });
 
-  // Fetch all boards
+  // Fetch all boards (filtered by user permissions)
   const fetchBoards = useCallback(async () => {
     try {
       const response = await boardApi.getAll();
-      setBoards(response.data.data);
-      return response.data.data;
+      let boardList = response.data.data;
+
+      // Filter boards based on user permissions (admins see all)
+      if (!user.isAdmin) {
+        const allowedBoards = user.permissions?.allowedBoards || [];
+        boardList = boardList.filter(b => allowedBoards.includes(b._id));
+      }
+
+      setBoards(boardList);
+      return boardList;
     } catch (err) {
       setError(err.message);
       return [];
     }
-  }, []);
+  }, [user]);
 
   // Fetch single board with columns and tasks
   const fetchBoard = useCallback(async (boardId) => {
@@ -65,11 +73,13 @@ export function AppProvider({ children, user }) {
   }, [fetchBoards]);
 
   // Fetch board data when current board changes
+  // Use currentBoard._id as dependency to ensure effect runs on board switch
+  const currentBoardId = currentBoard?._id;
   useEffect(() => {
-    if (currentBoard) {
-      fetchBoard(currentBoard._id);
+    if (currentBoardId) {
+      fetchBoard(currentBoardId);
     }
-  }, [currentBoard, fetchBoard]);
+  }, [currentBoardId, fetchBoard]);
 
   // Board operations
   const createBoard = async (name, description) => {
@@ -210,35 +220,40 @@ export function AppProvider({ children, user }) {
 
   const moveTask = async (taskId, newColumnId, position) => {
     try {
-      const task = tasks.find(t => t._id === taskId);
+      // Ensure consistent string IDs for comparisons
+      const taskIdStr = String(taskId);
+      const newColumnIdStr = String(newColumnId);
+
+      const task = tasks.find(t => String(t._id) === taskIdStr);
       if (!task) return;
 
-      const oldColumnId = task.columnId;
+      const oldColumnIdStr = String(task.columnId);
 
       // Optimistic update
       setTasks(prev => prev.map(t =>
-        t._id === taskId ? { ...t, columnId: newColumnId } : t
+        String(t._id) === taskIdStr ? { ...t, columnId: newColumnIdStr } : t
       ));
 
       setColumns(prev => prev.map(col => {
-        if (col._id === oldColumnId) {
-          return { ...col, taskIds: col.taskIds.filter(id => id !== taskId) };
+        const colIdStr = String(col._id);
+        if (colIdStr === oldColumnIdStr) {
+          return { ...col, taskIds: col.taskIds.filter(id => String(id) !== taskIdStr) };
         }
-        if (col._id === newColumnId) {
+        if (colIdStr === newColumnIdStr) {
           const newTaskIds = [...col.taskIds];
           if (position !== undefined) {
-            newTaskIds.splice(position, 0, taskId);
+            newTaskIds.splice(position, 0, taskIdStr);
           } else {
-            newTaskIds.push(taskId);
+            newTaskIds.push(taskIdStr);
           }
           return { ...col, taskIds: newTaskIds };
         }
         return col;
       }));
 
-      const response = await taskApi.move(taskId, newColumnId, position);
+      const response = await taskApi.move(taskIdStr, newColumnIdStr, position);
       const updatedTask = response.data.data;
-      setTasks(prev => prev.map(t => t._id === taskId ? updatedTask : t));
+      setTasks(prev => prev.map(t => String(t._id) === taskIdStr ? updatedTask : t));
 
       return updatedTask;
     } catch (err) {

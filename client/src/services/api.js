@@ -50,7 +50,8 @@ export const taskApi = {
 // User API (admin only)
 export const userApi = {
   getAll: () => api.get('/users'),
-  updatePermissions: (id, permissions) => api.put(`/users/${id}/permissions`, permissions)
+  updatePermissions: (id, permissions) => api.put(`/users/${id}/permissions`, permissions),
+  updateAllowedBoards: (id, allowedBoards) => api.put(`/users/${id}/permissions`, { allowedBoards })
 };
 
 export default api;

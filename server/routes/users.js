@@ -38,7 +38,8 @@ router.get('/', async (req, res, next) => {
       groups: user.groups_obj?.map(g => g.name) || [],
       permissions: {
         canAdminBoards: user.attributes?.hicks_can_admin_boards || false,
-        canDeleteTasks: user.attributes?.hicks_can_delete_tasks || false
+        canDeleteTasks: user.attributes?.hicks_can_delete_tasks || false,
+        allowedBoards: user.attributes?.hicks_allowed_boards || []
       }
     }));
 
@@ -52,17 +53,23 @@ router.get('/', async (req, res, next) => {
 router.put('/:id/permissions', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { canAdminBoards, canDeleteTasks } = req.body;
+    const { canAdminBoards, canDeleteTasks, allowedBoards } = req.body;
 
     // First get the current user to preserve other attributes
     const user = await authentikFetch(`/core/users/${id}/`);
 
-    // Update attributes
-    const updatedAttributes = {
-      ...user.attributes,
-      hicks_can_admin_boards: canAdminBoards || false,
-      hicks_can_delete_tasks: canDeleteTasks || false
-    };
+    // Update attributes - only update fields that were provided
+    const updatedAttributes = { ...user.attributes };
+
+    if (canAdminBoards !== undefined) {
+      updatedAttributes.hicks_can_admin_boards = canAdminBoards;
+    }
+    if (canDeleteTasks !== undefined) {
+      updatedAttributes.hicks_can_delete_tasks = canDeleteTasks;
+    }
+    if (allowedBoards !== undefined) {
+      updatedAttributes.hicks_allowed_boards = allowedBoards;
+    }
 
     // Patch the user
     await authentikFetch(`/core/users/${id}/`, {
@@ -77,8 +84,9 @@ router.put('/:id/permissions', async (req, res, next) => {
       data: {
         id: user.pk,
         permissions: {
-          canAdminBoards: canAdminBoards || false,
-          canDeleteTasks: canDeleteTasks || false
+          canAdminBoards: updatedAttributes.hicks_can_admin_boards || false,
+          canDeleteTasks: updatedAttributes.hicks_can_delete_tasks || false,
+          allowedBoards: updatedAttributes.hicks_allowed_boards || []
         }
       }
     });

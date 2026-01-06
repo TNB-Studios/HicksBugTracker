@@ -118,7 +118,8 @@ app.get('/api/me', async (req, res) => {
       isAdmin: isAdmin,
       permissions: {
         canAdminBoards: isAdmin || attributes.hicks_can_admin_boards || false,
-        canDeleteTasks: isAdmin || attributes.hicks_can_delete_tasks || false
+        canDeleteTasks: isAdmin || attributes.hicks_can_delete_tasks || false,
+        allowedBoards: attributes.hicks_allowed_boards || []
       }
     }
   });

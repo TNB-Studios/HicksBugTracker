@@ -59,25 +59,29 @@ export default function Board() {
   const filteredTasks = getFilteredTasks();
 
   const getTasksForColumn = (columnId) => {
-    return filteredTasks.filter(task => task.columnId === columnId);
+    const colIdStr = String(columnId);
+    return filteredTasks.filter(task => String(task.columnId) === colIdStr);
   };
 
   // Find all tasks in dependency chain that need to be moved
   const findDependencyChain = (taskId, targetColumnId) => {
     const tasksToMove = [];
-    const targetColumn = columns.find(c => c._id === targetColumnId);
+    const targetColStr = String(targetColumnId);
+    const targetColumn = columns.find(c => String(c._id) === targetColStr);
 
     const checkTask = (id) => {
-      const task = tasks.find(t => t._id === id);
+      const idStr = String(id);
+      const task = tasks.find(t => String(t._id) === idStr);
       if (!task || !task.dependsOn) return;
 
-      const parentTask = tasks.find(t => t._id === task.dependsOn);
+      const dependsOnStr = String(task.dependsOn);
+      const parentTask = tasks.find(t => String(t._id) === dependsOnStr);
       if (!parentTask) return;
 
       // Check if parent is in the target column or a "later" column
-      const parentColumn = columns.find(c => c._id === parentTask.columnId);
-      const targetIndex = columns.findIndex(c => c._id === targetColumnId);
-      const parentIndex = columns.findIndex(c => c._id === parentTask.columnId);
+      const parentColStr = String(parentTask.columnId);
+      const targetIndex = columns.findIndex(c => String(c._id) === targetColStr);
+      const parentIndex = columns.findIndex(c => String(c._id) === parentColStr);
 
       // If parent is in an earlier column than target, it needs to be moved
       if (parentIndex < targetIndex && DEPENDENCY_CHECK_COLUMNS.includes(targetColumn?.name)) {
@@ -92,7 +96,8 @@ export default function Board() {
   };
 
   const handleDragStart = (event) => {
-    const task = filteredTasks.find(t => t._id === event.active.id);
+    const activeIdStr = String(event.active.id);
+    const task = filteredTasks.find(t => String(t._id) === activeIdStr);
     setActiveTask(task);
   };
 
@@ -103,30 +108,34 @@ export default function Board() {
     if (!over) return;
 
     const taskId = active.id;
-    const task = filteredTasks.find(t => t._id === taskId);
+    const taskIdStr = String(taskId);
+    const task = filteredTasks.find(t => String(t._id) === taskIdStr);
     if (!task) return;
 
     // Determine the target column
     let targetColumnId = over.id;
 
     // Check if we dropped on a task (get its column)
-    const overTask = filteredTasks.find(t => t._id === over.id);
+    const overIdStr = String(over.id);
+    const overTask = filteredTasks.find(t => String(t._id) === overIdStr);
     if (overTask) {
       targetColumnId = overTask.columnId;
     }
 
     // Check if target is a column
-    const targetColumn = columns.find(c => c._id === targetColumnId);
+    const targetColStr = String(targetColumnId);
+    const targetColumn = columns.find(c => String(c._id) === targetColStr);
     if (!targetColumn) return;
 
     // If same column and same position, do nothing
-    if (task.columnId === targetColumnId && !overTask) return;
+    if (String(task.columnId) === targetColStr && !overTask) return;
 
     // Calculate position
     let position;
     if (overTask) {
       const columnTasks = getTasksForColumn(targetColumnId);
-      position = columnTasks.findIndex(t => t._id === overTask._id);
+      const overTaskIdStr = String(overTask._id);
+      position = columnTasks.findIndex(t => String(t._id) === overTaskIdStr);
     }
 
     // Check for dependency issues when moving to Next Up or Current
