@@ -4,7 +4,7 @@ import TaskCard from './TaskCard';
 import { useApp } from '../../context/AppContext';
 import { useState } from 'react';
 
-export default function Column({ column, tasks, onTaskClick, allTasks }) {
+export default function Column({ column, tasks, onTaskClick, allTasks, onToggleSort, sortAscending }) {
   const { deleteColumn, updateColumn } = useApp();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(column.name);
@@ -56,8 +56,13 @@ export default function Column({ column, tasks, onTaskClick, allTasks }) {
             className="column-name-input"
           />
         ) : (
-          <h3 onDoubleClick={() => !column.isDefault && setIsEditing(true)}>
+          <h3
+            onClick={onToggleSort}
+            onDoubleClick={() => !column.isDefault && setIsEditing(true)}
+            className="column-title"
+          >
             {column.name}
+            <span className="sort-indicator">{sortAscending ? ' ▲' : ' ▼'}</span>
             <span className="task-count">({tasks.length})</span>
           </h3>
         )}

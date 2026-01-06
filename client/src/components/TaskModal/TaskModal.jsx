@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
@@ -25,6 +25,21 @@ export default function TaskModal({ task, onClose }) {
 
   // Get available tasks for dependency dropdown (exclude current task)
   const availableDependencies = tasks.filter(t => t._id !== task?._id);
+
+  // Track if form has unsaved changes (only relevant for editing existing tasks)
+  const isDirty = useMemo(() => {
+    if (!task) return false; // New task - no dirty tracking needed
+    return (
+      formData.name !== (task.name || '') ||
+      formData.description !== (task.description || '') ||
+      formData.columnId !== (task.columnId || '') ||
+      formData.assignedTo !== (task.assignedTo || '') ||
+      formData.reportedBy !== (task.reportedBy || '') ||
+      formData.priority !== (task.priority || 'Medium') ||
+      formData.taskType !== (task.taskType || 'Task') ||
+      formData.dependsOn !== (task.dependsOn || '')
+    );
+  }, [formData, task]);
 
   const [newComment, setNewComment] = useState('');
   const [commentAuthor, setCommentAuthor] = useState('');
@@ -256,19 +271,33 @@ export default function TaskModal({ task, onClose }) {
           )}
 
           <div className="modal-footer">
-            {task && canDeleteTasks && (
-              <button type="button" className="btn btn-danger" onClick={handleDelete}>
-                Delete Task
-              </button>
+            {task ? (
+              <>
+                {canDeleteTasks && (
+                  <button type="button" className="btn btn-danger" onClick={handleDelete}>
+                    Delete Task
+                  </button>
+                )}
+                <div className="modal-footer-right">
+                  {isDirty && (
+                    <button type="submit" className="btn btn-primary">
+                      Save Changes
+                    </button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <button type="button" className="btn btn-secondary" onClick={onClose}>
+                  Cancel
+                </button>
+                <div className="modal-footer-right">
+                  <button type="submit" className="btn btn-primary">
+                    Create Task
+                  </button>
+                </div>
+              </>
             )}
-            <div className="modal-footer-right">
-              <button type="button" className="btn btn-secondary" onClick={onClose}>
-                Cancel
-              </button>
-              <button type="submit" className="btn btn-primary">
-                {task ? 'Save Changes' : 'Create Task'}
-              </button>
-            </div>
           </div>
         </form>
 

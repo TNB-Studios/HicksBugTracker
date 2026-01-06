@@ -3,6 +3,7 @@ import { AppProvider } from './context/AppContext';
 import BoardSelector from './components/BoardSelector/BoardSelector';
 import FilterPanel from './components/Filters/FilterPanel';
 import Board from './components/Board/Board';
+import ListView from './components/ListView/ListView';
 import AdminSettings from './components/AdminSettings/AdminSettings';
 import './App.css';
 
@@ -10,6 +11,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAdminSettings, setShowAdminSettings] = useState(false);
+  const [viewMode, setViewMode] = useState('board'); // 'board' or 'list'
 
   useEffect(() => {
     const apiUrl = import.meta.env.DEV ? 'http://localhost:5000/api/me' : '/api/me';
@@ -48,6 +50,21 @@ function App() {
         <header className="app-header">
           <h1>Hicks Bug Hunt</h1>
           <BoardSelector />
+          <div className="view-toggle">
+            <span>View:</span>
+            <button
+              className={`view-btn ${viewMode === 'board' ? 'active' : ''}`}
+              onClick={() => setViewMode('board')}
+            >
+              Board
+            </button>
+            <button
+              className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+              onClick={() => setViewMode('list')}
+            >
+              List
+            </button>
+          </div>
           <div className="user-info">
             <span>{user.name || user.email}</span>
             {user.isAdmin && <span className="admin-badge">Admin</span>}
@@ -60,8 +77,8 @@ function App() {
           </div>
         </header>
         <FilterPanel />
-        <main className="app-main">
-          <Board />
+        <main className={`app-main ${viewMode === 'list' ? 'app-main-list' : ''}`}>
+          {viewMode === 'board' ? <Board /> : <ListView />}
         </main>
         {showAdminSettings && (
           <AdminSettings onClose={() => setShowAdminSettings(false)} />

@@ -34,6 +34,7 @@ export default function Board() {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
   const [showAddColumn, setShowAddColumn] = useState(false);
+  const [sortAscending, setSortAscending] = useState(true);
 
   // Dependency dialog state
   const [dependencyDialog, setDependencyDialog] = useState({
@@ -60,8 +61,15 @@ export default function Board() {
 
   const getTasksForColumn = (columnId) => {
     const colIdStr = String(columnId);
-    return filteredTasks.filter(task => String(task.columnId) === colIdStr);
+    return filteredTasks
+      .filter(task => String(task.columnId) === colIdStr)
+      .sort((a, b) => {
+        const diff = new Date(a.createdAt) - new Date(b.createdAt);
+        return sortAscending ? diff : -diff;
+      });
   };
+
+  const toggleSort = () => setSortAscending(prev => !prev);
 
   // Find all tasks in dependency chain that need to be moved
   const findDependencyChain = (taskId, targetColumnId) => {
@@ -231,6 +239,8 @@ export default function Board() {
               tasks={getTasksForColumn(column._id)}
               onTaskClick={handleTaskClick}
               allTasks={tasks}
+              onToggleSort={toggleSort}
+              sortAscending={sortAscending}
             />
           ))}
 
