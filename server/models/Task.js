@@ -42,7 +42,6 @@ const taskSchema = new mongoose.Schema(
     },
     state: {
       type: String,
-      enum: ['Backlog', 'Next Up', 'Current', 'Completed'],
       default: 'Backlog'
     },
     assignedTo: {

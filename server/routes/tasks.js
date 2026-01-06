@@ -78,7 +78,7 @@ router.post('/tasks', async (req, res, next) => {
       description,
       boardId,
       columnId,
-      state: state || column.name, // Default state to column name if it matches
+      state: column.name, // State is always derived from column name
       assignedTo,
       reportedBy,
       priority,
@@ -168,11 +168,8 @@ router.put('/tasks/:id/move', async (req, res, next) => {
 
     // Update task's columnId and state
     task.columnId = columnId;
-    // Update state to match column name if it's a default state
-    const defaultStates = ['Backlog', 'Next Up', 'Current', 'Completed'];
-    if (defaultStates.includes(newColumn.name)) {
-      task.state = newColumn.name;
-    }
+    // State is always derived from column name
+    task.state = newColumn.name;
     await task.save();
 
     res.json({ success: true, data: task });

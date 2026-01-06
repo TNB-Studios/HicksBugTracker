@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 
-const STATES = ['Backlog', 'Next Up', 'Current', 'Completed'];
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 const TYPES = ['Task', 'Bug', 'Suggestion'];
 
@@ -10,14 +9,13 @@ const CACHE_ASSIGNED_TO = 'hicks_lastAssignedTo';
 const CACHE_REPORTED_BY = 'hicks_lastReportedBy';
 
 export default function TaskModal({ task, onClose }) {
-  const { columns, tasks, createTask, updateTask, deleteTask, addComment, deleteComment, user } = useApp();
+  const { columns, tasks, createTask, updateTask, moveTask, deleteTask, addComment, deleteComment, user } = useApp();
   const canDeleteTasks = user?.permissions?.canDeleteTasks || false;
 
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     columnId: '',
-    state: 'Backlog',
     assignedTo: '',
     reportedBy: '',
     priority: 'Medium',
@@ -38,7 +36,6 @@ export default function TaskModal({ task, onClose }) {
         name: task.name || '',
         description: task.description || '',
         columnId: task.columnId || '',
-        state: task.state || 'Backlog',
         assignedTo: task.assignedTo || '',
         reportedBy: task.reportedBy || '',
         priority: task.priority || 'Medium',
@@ -81,7 +78,12 @@ export default function TaskModal({ task, onClose }) {
       }
 
       if (task) {
+        // Update task fields
         await updateTask(task._id, formData);
+        // If column changed, move the task (which also updates state)
+        if (formData.columnId !== task.columnId) {
+          await moveTask(task._id, formData.columnId);
+        }
       } else {
         await createTask(formData);
       }
@@ -161,7 +163,7 @@ export default function TaskModal({ task, onClose }) {
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="columnId">Column</label>
+              <label htmlFor="columnId">Column / State</label>
               <select
                 id="columnId"
                 name="columnId"
@@ -170,20 +172,6 @@ export default function TaskModal({ task, onClose }) {
               >
                 {columns.map(col => (
                   <option key={col._id} value={col._id}>{col.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="state">State</label>
-              <select
-                id="state"
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-              >
-                {STATES.map(state => (
-                  <option key={state} value={state}>{state}</option>
                 ))}
               </select>
             </div>

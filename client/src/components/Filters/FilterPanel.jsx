@@ -1,10 +1,12 @@
 import { useApp } from '../../context/AppContext';
 
-const STATES = ['Backlog', 'Next Up', 'Current', 'Completed'];
 const TYPES = ['Task', 'Bug', 'Suggestion'];
 
 export default function FilterPanel() {
-  const { filters, setFilters } = useApp();
+  const { filters, setFilters, columns } = useApp();
+
+  // States are derived from column names
+  const states = columns.map(col => col.name);
 
   const handleStateToggle = (state) => {
     setFilters(prev => {
@@ -74,7 +76,7 @@ export default function FilterPanel() {
       <div className="filter-section">
         <label>State:</label>
         <div className="filter-states">
-          {STATES.map(state => (
+          {states.map(state => (
             <button
               key={state}
               className={`filter-state-btn ${filters.state.includes(state) ? 'active' : ''}`}

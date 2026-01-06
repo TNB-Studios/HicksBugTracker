@@ -5,7 +5,7 @@ const Column = require('../models/Column');
 const Task = require('../models/Task');
 
 // Default columns for new boards
-const DEFAULT_COLUMNS = ['Backlog', 'Next Up', 'Current', 'Completed'];
+const DEFAULT_COLUMNS = ['Backlog', 'Next Up', 'Working On', 'Completed', 'In Testing', 'Passed'];
 
 // @route   GET /api/boards
 // @desc    Get all boards

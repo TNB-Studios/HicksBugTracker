@@ -4,6 +4,46 @@ const Column = require('../models/Column');
 const Board = require('../models/Board');
 const Task = require('../models/Task');
 
+// Default columns that should always exist
+const DEFAULT_COLUMNS = ['Backlog', 'Next Up', 'Working On', 'Completed', 'In Testing', 'Passed'];
+
+// Ensure default columns exist for a board, returns updated columns array
+async function ensureDefaultColumns(board) {
+  let columns = await Column.find({ boardId: board._id });
+  let columnsChanged = false;
+
+  // Rename "Current" to "Working On" if it exists
+  const currentCol = columns.find(c => c.name === 'Current');
+  if (currentCol) {
+    currentCol.name = 'Working On';
+    await currentCol.save();
+    columnsChanged = true;
+  }
+
+  // Check which default columns are missing
+  const existingNames = columns.map(c => c.name);
+  const missingDefaults = DEFAULT_COLUMNS.filter(name => !existingNames.includes(name));
+
+  // Create missing default columns
+  for (const name of missingDefaults) {
+    const newColumn = await Column.create({
+      name,
+      boardId: board._id,
+      isDefault: true,
+      taskIds: []
+    });
+    board.columnOrder.push(newColumn._id);
+    columns.push(newColumn);
+    columnsChanged = true;
+  }
+
+  if (columnsChanged) {
+    await board.save();
+  }
+
+  return columns;
+}
+
 // @route   GET /api/boards/:boardId/columns
 // @desc    Get all columns for a board
 router.get('/boards/:boardId/columns', async (req, res, next) => {
@@ -14,7 +54,8 @@ router.get('/boards/:boardId/columns', async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Board not found' });
     }
 
-    const columns = await Column.find({ boardId: req.params.boardId });
+    // Ensure default columns exist (self-healing)
+    const columns = await ensureDefaultColumns(board);
 
     // Order columns according to board.columnOrder
     const orderedColumns = board.columnOrder.map(colId =>

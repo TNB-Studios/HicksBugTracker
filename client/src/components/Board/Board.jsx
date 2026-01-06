@@ -16,7 +16,7 @@ import DependencyDialog from './DependencyDialog';
 import { useApp } from '../../context/AppContext';
 
 // Columns that require dependency check
-const DEPENDENCY_CHECK_COLUMNS = ['Next Up', 'Current'];
+const DEPENDENCY_CHECK_COLUMNS = ['Next Up', 'Working On'];
 
 export default function Board() {
   const {

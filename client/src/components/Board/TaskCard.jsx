@@ -11,9 +11,14 @@ const priorityColors = {
 const stateColors = {
   'Backlog': '#9e9e9e',
   'Next Up': '#2196f3',
-  'Current': '#ff9800',
-  'Completed': '#4caf50'
+  'Working On': '#ff9800',
+  'Completed': '#4caf50',
+  'In Testing': '#9c27b0',
+  'Passed': '#00897b'
 };
+
+// Fallback color for custom states
+const getStateColor = (state) => stateColors[state] || '#607d8b';
 
 const typeColors = {
   'Task': '#5c6bc0',
@@ -80,7 +85,7 @@ export default function TaskCard({ task, onClick, allTasks = [] }) {
         )}
         <span
           className="task-state"
-          style={{ backgroundColor: stateColors[task.state] }}
+          style={{ backgroundColor: getStateColor(task.state) }}
         >
           {task.state}
         </span>
