@@ -31,6 +31,15 @@ body {
   font-weight: 600;
 }
 
+.app-header h1.app-title {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.app-header h1.app-title:hover {
+  opacity: 0.8;
+}
+
 .user-info {
   margin-left: auto;
   display: flex;
@@ -1293,4 +1302,36 @@ body {
 .email-config-form .private-key-input {
   font-family: monospace;
   font-size: 12px;
+}
+
+/* About Dialog */
+.about-dialog {
+  text-align: center;
+}
+
+.about-content {
+  padding: 20px;
+}
+
+.about-content p {
+  margin: 12px 0;
+  color: #172b4d;
+}
+
+.about-version {
+  font-size: 14px;
+  color: #5e6c84 !important;
+  background: #f4f5f7;
+  padding: 6px 12px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.about-content a {
+  color: #0079bf;
+  text-decoration: none;
+}
+
+.about-content a:hover {
+  text-decoration: underline;
 }

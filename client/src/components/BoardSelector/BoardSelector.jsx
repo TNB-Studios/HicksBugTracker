@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 
 export default function BoardSelector() {
@@ -8,6 +8,21 @@ export default function BoardSelector() {
   const [showCreate, setShowCreate] = useState(false);
   const [newBoardName, setNewBoardName] = useState('');
   const [newBoardDescription, setNewBoardDescription] = useState('');
+  const createFormRef = useRef(null);
+
+  // Close create form when clicking outside
+  useEffect(() => {
+    if (!showCreate) return;
+
+    const handleClickOutside = (event) => {
+      if (createFormRef.current && !createFormRef.current.contains(event.target)) {
+        setShowCreate(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showCreate]);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
 
@@ -110,7 +125,7 @@ export default function BoardSelector() {
       </div>
 
       {showCreate && (
-        <div className="board-create-form">
+        <div className="board-create-form" ref={createFormRef}>
           <input
             type="text"
             placeholder="Board name"

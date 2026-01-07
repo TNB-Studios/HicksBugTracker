@@ -7,10 +7,13 @@ import ListView from './components/ListView/ListView';
 import AdminSettings from './components/AdminSettings/AdminSettings';
 import './App.css';
 
+const APP_VERSION = '0.1.6.26';
+
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAdminSettings, setShowAdminSettings] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [viewMode, setViewMode] = useState('board'); // 'board' or 'list'
 
   useEffect(() => {
@@ -48,7 +51,7 @@ function App() {
     <AppProvider user={user}>
       <div className="app">
         <header className="app-header">
-          <h1>Hicks Bug Hunt</h1>
+          <h1 className="app-title" onClick={() => setShowAbout(true)}>Hicks Bug Hunt</h1>
           <BoardSelector />
           <div className="view-toggle">
             <span>View:</span>
@@ -82,6 +85,30 @@ function App() {
         </main>
         {showAdminSettings && (
           <AdminSettings user={user} onClose={() => setShowAdminSettings(false)} />
+        )}
+        {showAbout && (
+          <div className="modal-overlay" onClick={() => setShowAbout(false)}>
+            <div className="modal-content modal-small about-dialog" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>About Hicks Bug Hunt</h2>
+                <button className="modal-close" onClick={() => setShowAbout(false)}>&times;</button>
+              </div>
+              <div className="about-content">
+                <p className="about-version">Version {APP_VERSION}</p>
+                <p>Created by <strong>TNB Studios</strong></p>
+                <p>
+                  <a
+                    href="https://github.com/TNB-Studios/HicksBugTracker"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View source on GitHub
+                  </a>
+                </p>
+                <p>Code is distributed under the standard MIT license.</p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </AppProvider>
