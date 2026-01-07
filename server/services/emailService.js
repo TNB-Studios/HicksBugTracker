@@ -1,4 +1,5 @@
 const { google } = require('googleapis');
+const nodemailer = require('nodemailer');
 const EmailConfig = require('../models/EmailConfig');
 const EmailRule = require('../models/EmailRule');
 const Column = require('../models/Column');
@@ -172,16 +173,39 @@ async function sendEmail(to, subject, htmlBody) {
     return false;
   }
 
-  try {
-    const gmail = await getGmailClient(config);
-    const from = `"${config.fromName}" <${config.sendAsEmail}>`;
-    const textBody = htmlBody.replace(/<[^>]*>/g, '');
-    const raw = createEmail(from, to, subject, htmlBody, textBody);
+  const textBody = htmlBody.replace(/<[^>]*>/g, '');
 
-    await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: { raw }
-    });
+  try {
+    if (config.method === 'oauth2') {
+      // OAuth2 method (Google Workspace with Service Account)
+      const gmail = await getGmailClient(config);
+      const from = `"${config.fromName}" <${config.sendAsEmail}>`;
+      const raw = createEmail(from, to, subject, htmlBody, textBody);
+
+      await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: { raw }
+      });
+    } else {
+      // SMTP method (Gmail, Outlook, Yahoo, custom)
+      const transporter = nodemailer.createTransport({
+        host: config.smtpHost,
+        port: config.smtpPort,
+        secure: config.smtpSecure,
+        auth: {
+          user: config.smtpUser,
+          pass: config.smtpPassword
+        }
+      });
+
+      await transporter.sendMail({
+        from: `"${config.fromName}" <${config.smtpUser}>`,
+        to,
+        subject,
+        text: textBody,
+        html: htmlBody
+      });
+    }
 
     console.log(`Email sent to ${to}: ${subject}`);
     return true;

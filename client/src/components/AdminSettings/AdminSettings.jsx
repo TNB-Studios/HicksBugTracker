@@ -4,6 +4,28 @@ import BoardPermissions from './BoardPermissions';
 import EmailRulesManager from './EmailRulesManager';
 import EmailConfigSection from './EmailConfigSection';
 
+function CollapsibleSection({ title, description, defaultOpen = true, children }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className={`settings-section ${isOpen ? 'open' : 'collapsed'}`}>
+      <div className="section-header" onClick={() => setIsOpen(!isOpen)}>
+        <div className="section-header-content">
+          <h3>{title}</h3>
+          {description && !isOpen && <span className="section-preview">{description}</span>}
+        </div>
+        <span className={`collapse-icon ${isOpen ? 'open' : ''}`}>&#9662;</span>
+      </div>
+      {isOpen && (
+        <div className="section-content">
+          {description && <p className="section-description">{description}</p>}
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminSettings({ user: currentUser, onClose }) {
   const showUserPermissions = currentUser?.isAdmin;
   const [users, setUsers] = useState([]);
@@ -106,8 +128,10 @@ export default function AdminSettings({ user: currentUser, onClose }) {
             <>
               {/* User Permissions Section - Admin Only */}
               {showUserPermissions && (
-                <div className="settings-section">
-                  <h3>User Permissions</h3>
+                <CollapsibleSection
+                  title="User Permissions"
+                  defaultOpen={true}
+                >
                   <table className="users-table">
                     <thead>
                       <tr>
@@ -175,25 +199,28 @@ export default function AdminSettings({ user: currentUser, onClose }) {
                   <div className="admin-settings-note">
                     <p><strong>Note:</strong> Users in the "Hicks Admins" group automatically have all permissions.</p>
                   </div>
-                </div>
+                </CollapsibleSection>
               )}
 
               {/* Email Configuration Section - Admin Only */}
               {showUserPermissions && (
-                <div className="settings-section">
-                  <h3>Email Configuration</h3>
-                  <p className="section-description">
-                    Configure Gmail credentials for sending email notifications.
-                  </p>
+                <CollapsibleSection
+                  title="Email Configuration"
+                  description="Configure email credentials for sending notifications"
+                  defaultOpen={false}
+                >
                   <EmailConfigSection />
-                </div>
+                </CollapsibleSection>
               )}
 
               {/* Email Notification Rules Section */}
-              <div className="settings-section">
-                <h3>Email Notification Rules</h3>
+              <CollapsibleSection
+                title="Email Notification Rules"
+                description="Create rules to send emails when tasks change"
+                defaultOpen={false}
+              >
                 <EmailRulesManager boards={boards} />
-              </div>
+              </CollapsibleSection>
             </>
           )}
         </div>

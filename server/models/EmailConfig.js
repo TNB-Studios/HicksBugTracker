@@ -1,25 +1,56 @@
 const mongoose = require('mongoose');
 
-// EmailConfig stores Gmail OAuth2 Service Account credentials for sending emails
+// EmailConfig stores email credentials for sending emails
+// Supports both OAuth2 (Google Workspace) and SMTP (Gmail, Outlook, Yahoo, etc.)
 // Only one config document should exist (singleton pattern)
 const EmailConfigSchema = new mongoose.Schema({
-  // Service Account credentials (from Google Cloud Console JSON key file)
+  // Email method: 'oauth2' for Google Workspace, 'smtp' for regular email accounts
+  method: {
+    type: String,
+    enum: ['oauth2', 'smtp'],
+    default: 'smtp'
+  },
+
+  // ========== OAuth2 Settings (Google Workspace) ==========
   serviceAccountEmail: {
     type: String,
-    required: [true, 'Service account email is required'],
     trim: true
   },
   serviceAccountPrivateKey: {
-    type: String,
-    required: [true, 'Service account private key is required']
+    type: String
   },
   // The email address to send from (must be a user in your Workspace domain)
   sendAsEmail: {
     type: String,
-    required: [true, 'Send-as email address is required'],
     trim: true
   },
-  // Default "from" name
+
+  // ========== SMTP Settings (Gmail, Outlook, Yahoo, etc.) ==========
+  smtpProvider: {
+    type: String,
+    enum: ['gmail', 'outlook', 'yahoo', 'custom'],
+    default: 'gmail'
+  },
+  smtpHost: {
+    type: String,
+    trim: true
+  },
+  smtpPort: {
+    type: Number
+  },
+  smtpSecure: {
+    type: Boolean,
+    default: false
+  },
+  smtpUser: {
+    type: String,
+    trim: true
+  },
+  smtpPassword: {
+    type: String
+  },
+
+  // ========== Common Settings ==========
   fromName: {
     type: String,
     default: 'Hicks Bug Hunt'

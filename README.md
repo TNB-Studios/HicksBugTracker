@@ -8,7 +8,7 @@ A modern, self-hosted bug tracking and task management application built with Re
 - Drag-and-drop task management
 - Task dependencies
 - File attachments (images, videos, audio, documents)
-- Email notifications with configurable rules
+- Email notifications with configurable rules (Gmail, Outlook, Yahoo, or Google Workspace)
 - User authentication via Authentik (OIDC)
 - Role-based permissions
 - Multiple boards support
@@ -302,11 +302,29 @@ server {
 
 ## Email Configuration
 
-Hicks supports email notifications via Gmail OAuth2:
+Hicks supports email notifications via two methods:
+
+### SMTP (Gmail, Outlook/Hotmail, Yahoo)
+
+The simplest option for personal email accounts:
 
 1. Go to **Settings** (admin only)
-2. Click **Show Setup Guide** in the Email Configuration section
-3. Follow the steps to:
+2. In the **Email Configuration** section, select **SMTP**
+3. Choose your email provider (Gmail, Outlook/Hotmail, Yahoo, or Custom)
+4. Enter your email address and an **App Password** (not your regular password)
+   - [Gmail App Passwords](https://myaccount.google.com/apppasswords)
+   - [Outlook App Passwords](https://account.live.com/proofs/AppPassword)
+   - [Yahoo App Passwords](https://login.yahoo.com/account/security/app-passwords)
+
+**Note:** You must have 2-Step Verification enabled on your account to create App Passwords.
+
+### Google Workspace OAuth2
+
+For business accounts using Google Workspace:
+
+1. Go to **Settings** (admin only)
+2. In the **Email Configuration** section, select **Google Workspace OAuth2**
+3. Click **Show Setup Guide** and follow the steps to:
    - Create a Google Cloud Project
    - Enable Gmail API
    - Create a Service Account with Domain-Wide Delegation
