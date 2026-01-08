@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -18,7 +18,7 @@ import { useApp } from '../../context/AppContext';
 // Columns that require dependency check
 const DEPENDENCY_CHECK_COLUMNS = ['Next Up', 'Working On'];
 
-export default function Board() {
+export default function Board({ triggerNewTask }) {
   const {
     currentBoard,
     columns,
@@ -35,6 +35,14 @@ export default function Board() {
   const [newColumnName, setNewColumnName] = useState('');
   const [showAddColumn, setShowAddColumn] = useState(false);
   const [sortAscending, setSortAscending] = useState(true);
+
+  // Open new task modal when triggered from header
+  useEffect(() => {
+    if (triggerNewTask > 0) {
+      setSelectedTask(null);
+      setShowTaskModal(true);
+    }
+  }, [triggerNewTask]);
 
   // Dependency dialog state
   const [dependencyDialog, setDependencyDialog] = useState({
@@ -198,11 +206,6 @@ export default function Board() {
     }
   };
 
-  const handleNewTask = () => {
-    setSelectedTask(null);
-    setShowTaskModal(true);
-  };
-
   if (loading) {
     return <div className="loading">Loading...</div>;
   }
@@ -218,13 +221,6 @@ export default function Board() {
 
   return (
     <div className="board">
-      <div className="board-header">
-        <button className="btn btn-primary" onClick={handleNewTask}>
-          + New Task
-        </button>
-        <h2>{currentBoard.name}</h2>
-      </div>
-
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}

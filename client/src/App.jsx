@@ -7,7 +7,7 @@ import ListView from './components/ListView/ListView';
 import AdminSettings from './components/AdminSettings/AdminSettings';
 import './App.css';
 
-const APP_VERSION = '0.1.6.26';
+const APP_VERSION = '0.1.7.26';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -15,6 +15,9 @@ function App() {
   const [showAdminSettings, setShowAdminSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [viewMode, setViewMode] = useState('board'); // 'board' or 'list'
+  const [triggerNewTask, setTriggerNewTask] = useState(0);
+
+  const handleNewTask = () => setTriggerNewTask(prev => prev + 1);
 
   useEffect(() => {
     const apiUrl = import.meta.env.DEV ? 'http://localhost:5000/api/me' : '/api/me';
@@ -51,37 +54,44 @@ function App() {
     <AppProvider user={user}>
       <div className="app">
         <header className="app-header">
-          <h1 className="app-title" onClick={() => setShowAbout(true)}>Hicks Bug Hunt</h1>
-          <BoardSelector />
-          <div className="view-toggle">
-            <span>View:</span>
-            <button
-              className={`view-btn ${viewMode === 'board' ? 'active' : ''}`}
-              onClick={() => setViewMode('board')}
-            >
-              Board
-            </button>
-            <button
-              className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-              onClick={() => setViewMode('list')}
-            >
-              List
-            </button>
+          <div className="header-left">
+            <h1 className="app-title" onClick={() => setShowAbout(true)}>Hicks Bug Hunt</h1>
+            <button className="btn btn-primary" onClick={handleNewTask}>+ New Task</button>
           </div>
-          <div className="user-info">
-            <span>{user.name || user.email}</span>
-            {user.isAdmin && <span className="admin-badge">Admin</span>}
-            {(user.isAdmin || user.permissions?.canManageEmailRules) && (
-              <button className="settings-btn" onClick={() => setShowAdminSettings(true)}>
-                Settings
+          <div className="header-center">
+            <BoardSelector />
+            <div className="view-toggle">
+              <span>View:</span>
+              <button
+                className={`view-btn ${viewMode === 'board' ? 'active' : ''}`}
+                onClick={() => setViewMode('board')}
+              >
+                Board
               </button>
-            )}
-            <a href={import.meta.env.DEV ? 'http://localhost:5000/logout' : '/logout'} className="btn btn-secondary btn-small">Logout</a>
+              <button
+                className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+                onClick={() => setViewMode('list')}
+              >
+                List
+              </button>
+            </div>
+          </div>
+          <div className="header-right">
+            <div className="user-info">
+              <span>{user.name || user.email}</span>
+              {user.isAdmin && <span className="admin-badge">Admin</span>}
+              {(user.isAdmin || user.permissions?.canManageEmailRules) && (
+                <button className="settings-btn" onClick={() => setShowAdminSettings(true)}>
+                  Settings
+                </button>
+              )}
+              <a href={import.meta.env.DEV ? 'http://localhost:5000/logout' : '/logout'} className="btn btn-secondary btn-small">Logout</a>
+            </div>
           </div>
         </header>
         <FilterPanel />
         <main className={`app-main ${viewMode === 'list' ? 'app-main-list' : ''}`}>
-          {viewMode === 'board' ? <Board /> : <ListView />}
+          {viewMode === 'board' ? <Board triggerNewTask={triggerNewTask} /> : <ListView triggerNewTask={triggerNewTask} />}
         </main>
         {showAdminSettings && (
           <AdminSettings user={user} onClose={() => setShowAdminSettings(false)} />

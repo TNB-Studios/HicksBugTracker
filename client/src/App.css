@@ -40,8 +40,35 @@ body {
   opacity: 0.8;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-left .btn-primary {
+  background: #5ba4cf;
+}
+
+.header-left .btn-primary:hover {
+  background: #4a93be;
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .user-info {
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 12px;

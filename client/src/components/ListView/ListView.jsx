@@ -1,18 +1,24 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import TaskList from './TaskList';
 import TaskDetailsPanel from './TaskDetailsPanel';
 import TaskModal from '../TaskModal/TaskModal';
 import './ListView.css';
 
-export default function ListView() {
+export default function ListView({ triggerNewTask }) {
   const { currentBoard, loading, user } = useApp();
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [panelWidth, setPanelWidth] = useState(400); // Default width in pixels
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
-  const canCreateBoards = user?.isAdmin || user?.permissions?.canAdminBoards;
   const containerRef = useRef(null);
   const isDragging = useRef(false);
+
+  // Open new task modal when triggered from header
+  useEffect(() => {
+    if (triggerNewTask > 0) {
+      setShowNewTaskModal(true);
+    }
+  }, [triggerNewTask]);
 
   const handleMouseDown = useCallback((e) => {
     isDragging.current = true;
@@ -55,15 +61,6 @@ export default function ListView() {
   return (
     <div className="list-view" ref={containerRef}>
       <div className="list-view-content" style={{ marginRight: panelWidth }}>
-        <div className="board-header">
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowNewTaskModal(true)}
-          >
-            + New Task
-          </button>
-          <h2>{currentBoard.name}</h2>
-        </div>
         <TaskList
           selectedTaskId={selectedTaskId}
           onSelectTask={setSelectedTaskId}
