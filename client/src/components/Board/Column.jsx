@@ -4,7 +4,7 @@ import TaskCard from './TaskCard';
 import { useApp } from '../../context/AppContext';
 import { useState } from 'react';
 
-export default function Column({ column, tasks, onTaskClick, allTasks, onToggleSort, sortAscending }) {
+export default function Column({ column, tasks, onTaskClick, allTasks, onToggleSort, sortAscending, dragHandleListeners }) {
   const { deleteColumn, updateColumn } = useApp();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(column.name);
@@ -45,6 +45,11 @@ export default function Column({ column, tasks, onTaskClick, allTasks, onToggleS
       ref={setNodeRef}
     >
       <div className="column-header">
+        {dragHandleListeners && (
+          <div className="column-drag-handle" {...dragHandleListeners}>
+            <span>::</span>
+          </div>
+        )}
         {isEditing ? (
           <input
             type="text"

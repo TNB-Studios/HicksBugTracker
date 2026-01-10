@@ -7,7 +7,7 @@ import ListView from './components/ListView/ListView';
 import AdminSettings from './components/AdminSettings/AdminSettings';
 import './App.css';
 
-const APP_VERSION = '0.1.7.26';
+const APP_VERSION = '0.1.10.26';
 
 function App() {
   const [user, setUser] = useState(null);

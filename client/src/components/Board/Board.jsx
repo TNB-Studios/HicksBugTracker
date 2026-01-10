@@ -8,8 +8,14 @@ import {
   useSensor,
   useSensors
 } from '@dnd-kit/core';
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+  arrayMove
+} from '@dnd-kit/sortable';
 import Column from './Column';
+import SortableColumn from './SortableColumn';
 import TaskCard from './TaskCard';
 import TaskModal from '../TaskModal/TaskModal';
 import DependencyDialog from './DependencyDialog';
@@ -26,10 +32,12 @@ export default function Board({ triggerNewTask }) {
     getFilteredTasks,
     moveTask,
     createColumn,
+    reorderColumns,
     loading
   } = useApp();
 
   const [activeTask, setActiveTask] = useState(null);
+  const [activeColumn, setActiveColumn] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
@@ -112,17 +120,47 @@ export default function Board({ triggerNewTask }) {
   };
 
   const handleDragStart = (event) => {
-    const activeIdStr = String(event.active.id);
+    const { active } = event;
+    const activeIdStr = String(active.id);
+
+    // Check if dragging a column
+    if (active.data.current?.type === 'column') {
+      setActiveColumn(active.data.current.column);
+      setActiveTask(null);
+      return;
+    }
+
+    // Otherwise it's a task
     const task = filteredTasks.find(t => String(t._id) === activeIdStr);
     setActiveTask(task);
+    setActiveColumn(null);
   };
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;
     setActiveTask(null);
+    setActiveColumn(null);
 
     if (!over) return;
 
+    // Handle column reordering
+    if (active.data.current?.type === 'column') {
+      const activeColId = String(active.id);
+      const overColId = String(over.id);
+
+      if (activeColId !== overColId) {
+        const oldIndex = columns.findIndex(c => String(c._id) === activeColId);
+        const newIndex = columns.findIndex(c => String(c._id) === overColId);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const newOrder = arrayMove(columns, oldIndex, newIndex).map(c => c._id);
+          await reorderColumns(newOrder);
+        }
+      }
+      return;
+    }
+
+    // Handle task movement
     const taskId = active.id;
     const taskIdStr = String(taskId);
     const task = filteredTasks.find(t => String(t._id) === taskIdStr);
@@ -227,18 +265,22 @@ export default function Board({ triggerNewTask }) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="columns-container">
-          {columns.map(column => (
-            <Column
-              key={column._id}
-              column={column}
-              tasks={getTasksForColumn(column._id)}
-              onTaskClick={handleTaskClick}
-              allTasks={tasks}
-              onToggleSort={toggleSort}
-              sortAscending={sortAscending}
-            />
-          ))}
+        <SortableContext
+          items={columns.map(c => c._id)}
+          strategy={horizontalListSortingStrategy}
+        >
+          <div className="columns-container">
+            {columns.map(column => (
+              <SortableColumn
+                key={column._id}
+                column={column}
+                tasks={getTasksForColumn(column._id)}
+                onTaskClick={handleTaskClick}
+                allTasks={tasks}
+                onToggleSort={toggleSort}
+                sortAscending={sortAscending}
+              />
+            ))}
 
           <div className="add-column">
             {showAddColumn ? (
@@ -264,12 +306,30 @@ export default function Board({ triggerNewTask }) {
                 + Add Column
               </button>
             )}
+            </div>
           </div>
-        </div>
+        </SortableContext>
 
         <DragOverlay>
           {activeTask && (
             <TaskCard task={activeTask} onClick={() => {}} allTasks={tasks} />
+          )}
+          {activeColumn && (
+            <div className="column column-drag-overlay">
+              <div className="column-header">
+                <h3 className="column-title">{activeColumn.name}</h3>
+              </div>
+              <div className="column-tasks">
+                {getTasksForColumn(activeColumn._id).slice(0, 3).map(task => (
+                  <TaskCard key={task._id} task={task} onClick={() => {}} allTasks={tasks} />
+                ))}
+                {getTasksForColumn(activeColumn._id).length > 3 && (
+                  <div className="column-more-tasks">
+                    +{getTasksForColumn(activeColumn._id).length - 3} more
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </DragOverlay>
       </DndContext>
