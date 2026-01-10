@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   DndContext,
   DragOverlay,
-  closestCorners,
+  closestCenter,
+  pointerWithin,
+  rectIntersection,
   KeyboardSensor,
   PointerSensor,
   useSensor,
-  useSensors
+  useSensors,
+  getFirstCollision
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -72,6 +75,27 @@ export default function Board({ triggerNewTask }) {
       coordinateGetter: sortableKeyboardCoordinates
     })
   );
+
+  // Custom collision detection that handles columns and tasks differently
+  const collisionDetection = useCallback((args) => {
+    const { active, droppableContainers } = args;
+
+    // If dragging a column, only consider other columns as drop targets
+    if (active.data.current?.type === 'column') {
+      const columnIds = columns.map(c => String(c._id));
+      const columnContainers = droppableContainers.filter(
+        container => columnIds.includes(String(container.id))
+      );
+      return closestCenter({ ...args, droppableContainers: columnContainers });
+    }
+
+    // For tasks, use pointer within first, then fall back to closest center
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      return pointerCollisions;
+    }
+    return rectIntersection(args);
+  }, [columns]);
 
   const filteredTasks = getFilteredTasks();
 
@@ -261,9 +285,17 @@ export default function Board({ triggerNewTask }) {
     <div className="board">
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={collisionDetection}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        autoScroll={{
+          enabled: true,
+          threshold: {
+            x: 0.15,
+            y: 0.15
+          },
+          acceleration: 15
+        }}
       >
         <SortableContext
           items={columns.map(c => c._id)}

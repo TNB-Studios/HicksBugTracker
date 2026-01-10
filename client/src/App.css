@@ -237,7 +237,9 @@ body {
 
 /* Board */
 .board {
-  min-height: calc(100vh - 160px);
+  height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
 }
 
 .board-header {
@@ -256,7 +258,8 @@ body {
   gap: 16px;
   align-items: flex-start;
   overflow-x: auto;
-  padding-bottom: 20px;
+  flex: 1;
+  padding-bottom: 8px;
 }
 
 /* Column */
