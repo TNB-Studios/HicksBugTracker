@@ -252,9 +252,24 @@ export function AppProvider({ children, user }) {
 
       setColumns(prev => prev.map(col => {
         const colIdStr = String(col._id);
+
+        // Same column reordering
+        if (colIdStr === oldColumnIdStr && colIdStr === newColumnIdStr) {
+          const newTaskIds = col.taskIds.filter(id => String(id) !== taskIdStr);
+          if (position !== undefined) {
+            newTaskIds.splice(position, 0, taskIdStr);
+          } else {
+            newTaskIds.push(taskIdStr);
+          }
+          return { ...col, taskIds: newTaskIds };
+        }
+
+        // Remove from old column
         if (colIdStr === oldColumnIdStr) {
           return { ...col, taskIds: col.taskIds.filter(id => String(id) !== taskIdStr) };
         }
+
+        // Add to new column
         if (colIdStr === newColumnIdStr) {
           const newTaskIds = [...col.taskIds];
           if (position !== undefined) {
@@ -264,6 +279,7 @@ export function AppProvider({ children, user }) {
           }
           return { ...col, taskIds: newTaskIds };
         }
+
         return col;
       }));
 

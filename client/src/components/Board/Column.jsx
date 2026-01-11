@@ -4,13 +4,13 @@ import TaskCard from './TaskCard';
 import { useApp } from '../../context/AppContext';
 import { useState } from 'react';
 
-export default function Column({ column, tasks, onTaskClick, allTasks, onToggleSort, sortAscending, dragHandleListeners }) {
+export default function Column({ column, tasks, onTaskClick, allTasks, dragHandleListeners }) {
   const { deleteColumn, updateColumn } = useApp();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(column.name);
 
   const { setNodeRef, isOver } = useDroppable({
-    id: column._id
+    id: `column-drop-${column._id}`
   });
 
   const handleDelete = async () => {
@@ -62,12 +62,10 @@ export default function Column({ column, tasks, onTaskClick, allTasks, onToggleS
           />
         ) : (
           <h3
-            onClick={onToggleSort}
             onDoubleClick={() => !column.isDefault && setIsEditing(true)}
             className="column-title"
           >
             {column.name}
-            <span className="sort-indicator">{sortAscending ? ' ▲' : ' ▼'}</span>
             <span className="task-count">({tasks.length})</span>
           </h3>
         )}

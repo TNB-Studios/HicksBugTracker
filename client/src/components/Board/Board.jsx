@@ -45,7 +45,6 @@ export default function Board({ triggerNewTask }) {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
   const [showAddColumn, setShowAddColumn] = useState(false);
-  const [sortAscending, setSortAscending] = useState(true);
 
   // Open new task modal when triggered from header
   useEffect(() => {
@@ -76,40 +75,95 @@ export default function Board({ triggerNewTask }) {
     })
   );
 
+  // Helper to check if an ID is a column drop zone
+  const isColumnDropZone = (id) => String(id).startsWith('column-drop-');
+  const getColumnIdFromDropZone = (id) => String(id).replace('column-drop-', '');
+
   // Custom collision detection that handles columns and tasks differently
   const collisionDetection = useCallback((args) => {
     const { active, droppableContainers } = args;
+    const columnIds = columns.map(c => String(c._id));
 
-    // If dragging a column, only consider other columns as drop targets
+    // Helper to check if ID is a column (either sortable or drop zone)
+    const isColumnTarget = (id) => {
+      const idStr = String(id);
+      return isColumnDropZone(idStr) || columnIds.includes(idStr);
+    };
+
+    // If dragging a column, only consider other sortable columns as drop targets
     if (active.data.current?.type === 'column') {
-      const columnIds = columns.map(c => String(c._id));
       const columnContainers = droppableContainers.filter(
         container => columnIds.includes(String(container.id))
       );
       return closestCenter({ ...args, droppableContainers: columnContainers });
     }
 
-    // For tasks, use pointer within first, then fall back to closest center
-    const pointerCollisions = pointerWithin(args);
-    if (pointerCollisions.length > 0) {
-      return pointerCollisions;
+    // For tasks: first find which column we're over using pointerWithin
+    const dropZoneContainers = droppableContainers.filter(c => isColumnDropZone(c.id));
+    const columnIntersections = pointerWithin({ ...args, droppableContainers: dropZoneContainers });
+
+    if (columnIntersections.length > 0) {
+      // We're over a column - now check if we're over a task in that column
+      const targetColumnDropZone = columnIntersections[0];
+      const targetColumnId = getColumnIdFromDropZone(targetColumnDropZone.id);
+
+      // Get tasks that belong to this column
+      const activeId = String(active.id);
+      const columnTaskIds = columns.find(c => String(c._id) === targetColumnId)?.taskIds?.map(id => String(id)) || [];
+
+      const tasksInColumn = droppableContainers.filter(container => {
+        const containerId = String(container.id);
+        return columnTaskIds.includes(containerId) && containerId !== activeId;
+      });
+
+      // Check if pointer is over any task in this column
+      if (tasksInColumn.length > 0) {
+        const taskCollisions = pointerWithin({ ...args, droppableContainers: tasksInColumn });
+        if (taskCollisions.length > 0) {
+          return taskCollisions;
+        }
+
+        // Not directly over a task - use closestCenter to find nearest task in column
+        const closestTask = closestCenter({ ...args, droppableContainers: tasksInColumn });
+        if (closestTask.length > 0) {
+          return closestTask;
+        }
+      }
+
+      // No task found in column - return the column drop zone
+      return [targetColumnDropZone];
     }
-    return rectIntersection(args);
+
+    // Fallback: find closest column drop zone
+    if (dropZoneContainers.length > 0) {
+      return closestCenter({ ...args, droppableContainers: dropZoneContainers });
+    }
+
+    return [];
   }, [columns]);
 
   const filteredTasks = getFilteredTasks();
 
   const getTasksForColumn = (columnId) => {
     const colIdStr = String(columnId);
+    const column = columns.find(c => String(c._id) === colIdStr);
+    const taskIds = column?.taskIds?.map(id => String(id)) || [];
+
     return filteredTasks
       .filter(task => String(task.columnId) === colIdStr)
       .sort((a, b) => {
-        const diff = new Date(a.createdAt) - new Date(b.createdAt);
-        return sortAscending ? diff : -diff;
+        const aIndex = taskIds.indexOf(String(a._id));
+        const bIndex = taskIds.indexOf(String(b._id));
+        // Tasks in taskIds array are sorted by their position
+        // Tasks not in array go to the end, sorted by createdAt
+        if (aIndex === -1 && bIndex === -1) {
+          return new Date(a.createdAt) - new Date(b.createdAt);
+        }
+        if (aIndex === -1) return 1;
+        if (bIndex === -1) return -1;
+        return aIndex - bIndex;
       });
   };
-
-  const toggleSort = () => setSortAscending(prev => !prev);
 
   // Find all tasks in dependency chain that need to be moved
   const findDependencyChain = (taskId, targetColumnId) => {
@@ -191,29 +245,60 @@ export default function Board({ triggerNewTask }) {
     if (!task) return;
 
     // Determine the target column
-    let targetColumnId = over.id;
-
-    // Check if we dropped on a task (get its column)
     const overIdStr = String(over.id);
-    const overTask = filteredTasks.find(t => String(t._id) === overIdStr);
-    if (overTask) {
-      targetColumnId = overTask.columnId;
+    let targetColumnId;
+
+    // Check if we dropped on a column drop zone
+    if (isColumnDropZone(overIdStr)) {
+      targetColumnId = getColumnIdFromDropZone(overIdStr);
+    }
+    // Check if we dropped directly on a sortable column
+    else if (columns.find(c => String(c._id) === overIdStr)) {
+      targetColumnId = overIdStr;
+    }
+    // Check if we dropped on a task (get its column)
+    else {
+      const overTask = filteredTasks.find(t => String(t._id) === overIdStr);
+      if (overTask) {
+        targetColumnId = overTask.columnId;
+      } else {
+        // Unknown target
+        return;
+      }
     }
 
-    // Check if target is a column
+    // Find the target column
     const targetColStr = String(targetColumnId);
     const targetColumn = columns.find(c => String(c._id) === targetColStr);
     if (!targetColumn) return;
 
-    // If same column and same position, do nothing
-    if (String(task.columnId) === targetColStr && !overTask) return;
+    // Check if we dropped on a task for position calculation
+    const overTask = filteredTasks.find(t => String(t._id) === overIdStr);
+    const isSameColumn = String(task.columnId) === targetColStr;
 
     // Calculate position
     let position;
     if (overTask) {
       const columnTasks = getTasksForColumn(targetColumnId);
       const overTaskIdStr = String(overTask._id);
-      position = columnTasks.findIndex(t => String(t._id) === overTaskIdStr);
+      const overIndex = columnTasks.findIndex(t => String(t._id) === overTaskIdStr);
+      const activeIndex = columnTasks.findIndex(t => String(t._id) === taskIdStr);
+
+      if (isSameColumn) {
+        // Same column reordering - if moving down, account for removal
+        if (activeIndex < overIndex) {
+          position = overIndex; // Will be inserted at this position after removal
+        } else {
+          position = overIndex;
+        }
+        // If dropped on itself, do nothing
+        if (activeIndex === overIndex) return;
+      } else {
+        position = overIndex;
+      }
+    } else if (isSameColumn) {
+      // Dropped on empty space in same column - do nothing
+      return;
     }
 
     // Check for dependency issues when moving to Next Up or Current
@@ -309,8 +394,6 @@ export default function Board({ triggerNewTask }) {
                 tasks={getTasksForColumn(column._id)}
                 onTaskClick={handleTaskClick}
                 allTasks={tasks}
-                onToggleSort={toggleSort}
-                sortAscending={sortAscending}
               />
             ))}
 
