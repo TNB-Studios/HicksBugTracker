@@ -1,9 +1,10 @@
 import { useApp } from '../../context/AppContext';
+import UserSelect from '../UserSelect/UserSelect';
 
 const TYPES = ['Task', 'Bug', 'Suggestion'];
 
 export default function FilterPanel() {
-  const { filters, setFilters, columns } = useApp();
+  const { filters, setFilters, columns, boardUsers } = useApp();
 
   // States are derived from column names
   const states = columns.map(col => col.name);
@@ -90,12 +91,12 @@ export default function FilterPanel() {
 
       <div className="filter-section">
         <label>Assigned To:</label>
-        <input
-          type="text"
-          placeholder="Filter by assignee..."
+        <UserSelect
           value={filters.assignedTo}
           onChange={handleAssignedToChange}
-          className="filter-assigned"
+          users={boardUsers}
+          placeholder="Filter by assignee..."
+          name="assignedTo"
         />
       </div>
 
