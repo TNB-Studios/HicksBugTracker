@@ -1,0 +1,27 @@
+.rich-text-display {
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.rich-text-display p {
+  margin: 0 0 8px 0;
+}
+
+.rich-text-display p:last-child {
+  margin-bottom: 0;
+}
+
+.rich-text-display strong,
+.rich-text-display b {
+  font-weight: 600;
+}
+
+.rich-text-display em,
+.rich-text-display i {
+  font-style: italic;
+}
+
+.rich-text-display u {
+  text-decoration: underline;
+}

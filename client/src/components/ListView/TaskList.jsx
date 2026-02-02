@@ -16,7 +16,7 @@ const typeColors = {
   'Suggestion': '#43a047'
 };
 
-export default function TaskList({ selectedTaskId, onSelectTask }) {
+export default function TaskList({ selectedTaskIds = [], onTaskClick, onTaskDoubleClick }) {
   const { tasks, getFilteredTasks, columns } = useApp();
   const [expandedTasks, setExpandedTasks] = useState(new Set());
   const [sortColumn, setSortColumn] = useState('name');
@@ -126,14 +126,15 @@ export default function TaskList({ selectedTaskId, onSelectTask }) {
     const children = childrenMap.get(taskId) || [];
     const hasChildren = children.length > 0;
     const isExpanded = expandedTasks.has(taskId);
-    const isSelected = selectedTaskId === task._id;
+    const isSelected = selectedTaskIds.includes(String(task._id));
 
     return (
       <div key={taskId} className="task-list-item-container">
         <div
           className={`task-list-item ${isSelected ? 'selected' : ''}`}
           style={{ paddingLeft: depth * 24 + 8 }}
-          onClick={() => onSelectTask(task._id)}
+          onClick={(e) => onTaskClick(task._id, e)}
+          onDoubleClick={() => onTaskDoubleClick(task._id)}
         >
           <div className="task-list-expand">
             {hasChildren ? (

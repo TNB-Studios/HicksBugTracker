@@ -13,7 +13,8 @@
       "Bash(node --version:*)",
       "Bash(cat:*)",
       "Bash(ls:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

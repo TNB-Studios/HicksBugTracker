@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -36,22 +36,37 @@ export default function Board({ triggerNewTask }) {
     moveTask,
     createColumn,
     reorderColumns,
-    loading
+    loading,
+    selectedTaskIds,
+    selectTask,
+    toggleTaskSelection,
+    clearSelection,
+    selectMultipleTasks
   } = useApp();
 
   const [activeTask, setActiveTask] = useState(null);
   const [activeColumn, setActiveColumn] = useState(null);
+  const [draggedTasks, setDraggedTasks] = useState([]); // Tasks being dragged (multi-select)
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
   const [showAddColumn, setShowAddColumn] = useState(false);
+  const prevTriggerNewTask = useRef(triggerNewTask);
+
+  // Drag-select state
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionStart, setSelectionStart] = useState(null);
+  const [selectionCurrent, setSelectionCurrent] = useState(null);
+  const columnsContainerRef = useRef(null);
+  const taskRefs = useRef(new Map()); // Map of taskId -> DOM element
 
   // Open new task modal when triggered from header
   useEffect(() => {
-    if (triggerNewTask > 0) {
+    if (triggerNewTask > 0 && triggerNewTask !== prevTriggerNewTask.current) {
       setSelectedTask(null);
       setShowTaskModal(true);
     }
+    prevTriggerNewTask.current = triggerNewTask;
   }, [triggerNewTask]);
 
   // Dependency dialog state
@@ -205,6 +220,7 @@ export default function Board({ triggerNewTask }) {
     if (active.data.current?.type === 'column') {
       setActiveColumn(active.data.current.column);
       setActiveTask(null);
+      setDraggedTasks([]);
       return;
     }
 
@@ -212,12 +228,29 @@ export default function Board({ triggerNewTask }) {
     const task = filteredTasks.find(t => String(t._id) === activeIdStr);
     setActiveTask(task);
     setActiveColumn(null);
+
+    // If the dragged task is selected, find all selected tasks in the same column
+    // Use string comparison for ID matching
+    const selectedIdsAsStrings = selectedTaskIds.map(id => String(id));
+    const taskIdStr = task ? String(task._id) : '';
+
+    if (task && selectedIdsAsStrings.includes(taskIdStr)) {
+      const tasksInSameColumn = filteredTasks.filter(t =>
+        selectedIdsAsStrings.includes(String(t._id)) && String(t.columnId) === String(task.columnId)
+      );
+      setDraggedTasks(tasksInSameColumn);
+    } else {
+      // Just dragging a single unselected task
+      setDraggedTasks(task ? [task] : []);
+    }
   };
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;
+    const currentDraggedTasks = [...draggedTasks];
     setActiveTask(null);
     setActiveColumn(null);
+    setDraggedTasks([]);
 
     if (!over) return;
 
@@ -301,7 +334,27 @@ export default function Board({ triggerNewTask }) {
       return;
     }
 
-    // Check for dependency issues when moving to Next Up or Current
+    // Move all dragged tasks (multi-select drag)
+    if (currentDraggedTasks.length > 1) {
+      // Sort tasks by their current position in the column to maintain order
+      const columnTasks = getTasksForColumn(task.columnId);
+      const sortedDraggedTasks = [...currentDraggedTasks].sort((a, b) => {
+        const aIndex = columnTasks.findIndex(t => t._id === a._id);
+        const bIndex = columnTasks.findIndex(t => t._id === b._id);
+        return aIndex - bIndex;
+      });
+
+      // Move all tasks in parallel for instant feedback
+      await Promise.all(
+        sortedDraggedTasks.map((t, i) => {
+          const insertPosition = position !== undefined ? position + i : undefined;
+          return moveTask(t._id, targetColumnId, insertPosition);
+        })
+      );
+      return;
+    }
+
+    // Single task drag - check for dependency issues when moving to Next Up or Current
     if (DEPENDENCY_CHECK_COLUMNS.includes(targetColumn.name) && task.dependsOn) {
       const tasksToMove = findDependencyChain(taskId, targetColumnId);
 
@@ -340,7 +393,16 @@ export default function Board({ triggerNewTask }) {
     setDependencyDialog({ show: false, task: null, parentTask: null, targetColumnId: null, position: null, tasksToMove: [] });
   };
 
-  const handleTaskClick = (task) => {
+  const handleTaskClick = (task, e) => {
+    // Ctrl/Cmd+click to toggle selection
+    if (e.ctrlKey || e.metaKey) {
+      toggleTaskSelection(task._id);
+    } else {
+      selectTask(task._id);
+    }
+  };
+
+  const handleTaskDoubleClick = (task) => {
     setSelectedTask(task);
     setShowTaskModal(true);
   };
@@ -352,6 +414,125 @@ export default function Board({ triggerNewTask }) {
       setShowAddColumn(false);
     }
   };
+
+  // Register task DOM element refs for drag-select intersection
+  const registerTaskRef = useCallback((taskId, element) => {
+    if (element) {
+      taskRefs.current.set(taskId, element);
+    } else {
+      taskRefs.current.delete(taskId);
+    }
+  }, []);
+
+  // Calculate selection rectangle bounds
+  const getSelectionRect = useCallback(() => {
+    if (!selectionStart || !selectionCurrent) return null;
+    return {
+      left: Math.min(selectionStart.x, selectionCurrent.x),
+      top: Math.min(selectionStart.y, selectionCurrent.y),
+      width: Math.abs(selectionCurrent.x - selectionStart.x),
+      height: Math.abs(selectionCurrent.y - selectionStart.y),
+    };
+  }, [selectionStart, selectionCurrent]);
+
+  // Check if two rectangles intersect
+  const rectsIntersect = (rect1, rect2) => {
+    return !(
+      rect1.right < rect2.left ||
+      rect1.left > rect2.right ||
+      rect1.bottom < rect2.top ||
+      rect1.top > rect2.bottom
+    );
+  };
+
+  // Find tasks that intersect with selection rectangle
+  const getTasksInSelection = useCallback(() => {
+    const selectionRect = getSelectionRect();
+    if (!selectionRect || !columnsContainerRef.current) return [];
+
+    const containerRect = columnsContainerRef.current.getBoundingClientRect();
+    const absSelectionRect = {
+      left: selectionRect.left + containerRect.left + columnsContainerRef.current.scrollLeft,
+      top: selectionRect.top + containerRect.top + columnsContainerRef.current.scrollTop,
+      right: selectionRect.left + selectionRect.width + containerRect.left + columnsContainerRef.current.scrollLeft,
+      bottom: selectionRect.top + selectionRect.height + containerRect.top + columnsContainerRef.current.scrollTop,
+    };
+
+    const selectedIds = [];
+    taskRefs.current.forEach((element, taskId) => {
+      const taskRect = element.getBoundingClientRect();
+      if (rectsIntersect(absSelectionRect, taskRect)) {
+        selectedIds.push(taskId);
+      }
+    });
+
+    return selectedIds;
+  }, [getSelectionRect]);
+
+  // Update selection during drag
+  useEffect(() => {
+    if (isSelecting) {
+      const taskIds = getTasksInSelection();
+      selectMultipleTasks(taskIds);
+    }
+  }, [isSelecting, selectionCurrent, getTasksInSelection, selectMultipleTasks]);
+
+  // Drag-select mouse handlers
+  const handleSelectionMouseDown = useCallback((e) => {
+    // Only start selection if clicking on empty space (columns-container background)
+    // and not during a dnd-kit drag
+    if (e.target.closest('.task-card') || e.target.closest('.column-header') || activeTask || activeColumn) {
+      return;
+    }
+
+    // Don't start selection if clicking on add-column
+    if (e.target.closest('.add-column')) {
+      return;
+    }
+
+    const containerRect = columnsContainerRef.current.getBoundingClientRect();
+    const x = e.clientX - containerRect.left + columnsContainerRef.current.scrollLeft;
+    const y = e.clientY - containerRect.top + columnsContainerRef.current.scrollTop;
+
+    setSelectionStart({ x, y });
+    setSelectionCurrent({ x, y });
+    setIsSelecting(true);
+
+    // Clear existing selection unless Ctrl/Cmd is held
+    if (!e.ctrlKey && !e.metaKey) {
+      clearSelection();
+    }
+  }, [activeTask, activeColumn, clearSelection]);
+
+  const handleSelectionMouseMove = useCallback((e) => {
+    if (!isSelecting || !columnsContainerRef.current) return;
+
+    const containerRect = columnsContainerRef.current.getBoundingClientRect();
+    const x = e.clientX - containerRect.left + columnsContainerRef.current.scrollLeft;
+    const y = e.clientY - containerRect.top + columnsContainerRef.current.scrollTop;
+
+    setSelectionCurrent({ x, y });
+  }, [isSelecting]);
+
+  const handleSelectionMouseUp = useCallback(() => {
+    setIsSelecting(false);
+    setSelectionStart(null);
+    setSelectionCurrent(null);
+  }, []);
+
+  // Add global mouse event listeners for drag-select
+  useEffect(() => {
+    if (isSelecting) {
+      document.addEventListener('mousemove', handleSelectionMouseMove);
+      document.addEventListener('mouseup', handleSelectionMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleSelectionMouseMove);
+        document.removeEventListener('mouseup', handleSelectionMouseUp);
+      };
+    }
+  }, [isSelecting, handleSelectionMouseMove, handleSelectionMouseUp]);
+
+  const selectionRect = getSelectionRect();
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -386,14 +567,32 @@ export default function Board({ triggerNewTask }) {
           items={columns.map(c => c._id)}
           strategy={horizontalListSortingStrategy}
         >
-          <div className="columns-container">
+          <div
+            className="columns-container"
+            ref={columnsContainerRef}
+            onMouseDown={handleSelectionMouseDown}
+          >
+            {isSelecting && selectionRect && (
+              <div
+                className="selection-rectangle"
+                style={{
+                  left: selectionRect.left,
+                  top: selectionRect.top,
+                  width: selectionRect.width,
+                  height: selectionRect.height,
+                }}
+              />
+            )}
             {columns.map(column => (
               <SortableColumn
                 key={column._id}
                 column={column}
                 tasks={getTasksForColumn(column._id)}
                 onTaskClick={handleTaskClick}
+                onTaskDoubleClick={handleTaskDoubleClick}
                 allTasks={tasks}
+                selectedTaskIds={selectedTaskIds}
+                registerTaskRef={registerTaskRef}
               />
             ))}
 
@@ -427,7 +626,13 @@ export default function Board({ triggerNewTask }) {
 
         <DragOverlay>
           {activeTask && (
-            <TaskCard task={activeTask} onClick={() => {}} allTasks={tasks} />
+            <div className="drag-overlay-tasks">
+              {draggedTasks.map((task) => (
+                <div key={task._id} className="drag-overlay-card">
+                  <TaskCard task={task} onClick={() => {}} allTasks={tasks} />
+                </div>
+              ))}
+            </div>
           )}
           {activeColumn && (
             <div className="column column-drag-overlay">

@@ -12,6 +12,10 @@ export function AppProvider({ children, user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Clipboard for copy/cut/paste (supports multiple tasks)
+  const [clipboard, setClipboard] = useState(null); // { tasks: [], isCut, sourceBoardId }
+  const [selectedTaskIds, setSelectedTaskIds] = useState([]); // For clipboard operations (multi-select)
+
   // Filters
   const [filters, setFilters] = useState({
     state: [],
@@ -390,6 +394,144 @@ export function AppProvider({ children, user }) {
     }
   };
 
+  // Selection operations - always store IDs as strings for consistent comparison
+  const selectTask = useCallback((taskId, addToSelection = false) => {
+    const idStr = String(taskId);
+    if (addToSelection) {
+      setSelectedTaskIds(prev =>
+        prev.includes(idStr) ? prev : [...prev, idStr]
+      );
+    } else {
+      setSelectedTaskIds([idStr]);
+    }
+  }, []);
+
+  const toggleTaskSelection = useCallback((taskId) => {
+    const idStr = String(taskId);
+    setSelectedTaskIds(prev =>
+      prev.includes(idStr)
+        ? prev.filter(id => id !== idStr)
+        : [...prev, idStr]
+    );
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedTaskIds([]);
+  }, []);
+
+  const selectMultipleTasks = useCallback((taskIds) => {
+    setSelectedTaskIds(taskIds.map(id => String(id)));
+  }, []);
+
+  // Clipboard operations (now supports multiple tasks)
+  const copyTasks = useCallback((tasksToClip) => {
+    if (!tasksToClip || tasksToClip.length === 0 || !currentBoard) return;
+    setClipboard({
+      tasks: tasksToClip.map(t => ({ ...t })),
+      isCut: false,
+      sourceBoardId: currentBoard._id
+    });
+  }, [currentBoard]);
+
+  const cutTasks = useCallback((tasksToClip) => {
+    if (!tasksToClip || tasksToClip.length === 0 || !currentBoard) return;
+    setClipboard({
+      tasks: tasksToClip.map(t => ({ ...t })),
+      isCut: true,
+      sourceBoardId: currentBoard._id
+    });
+  }, [currentBoard]);
+
+  const generatePasteName = useCallback((baseName, existingTasks) => {
+    // Check if name already has a (N) suffix and extract base name
+    const suffixMatch = baseName.match(/^(.+?)\s*\((\d+)\)$/);
+    const cleanBaseName = suffixMatch ? suffixMatch[1].trim() : baseName;
+
+    // Find all tasks with the same base name (with or without suffix)
+    const pattern = new RegExp(`^${cleanBaseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s*\\(\\d+\\))?$`);
+    const matchingTasks = existingTasks.filter(t => pattern.test(t.name));
+
+    if (matchingTasks.length === 0) {
+      return baseName;
+    }
+
+    // Find the highest number used
+    let maxNum = 0;
+    matchingTasks.forEach(t => {
+      const match = t.name.match(/\((\d+)\)$/);
+      if (match) {
+        maxNum = Math.max(maxNum, parseInt(match[1], 10));
+      }
+    });
+
+    // If original name exists without suffix, start from (2)
+    const exactMatch = existingTasks.some(t => t.name === cleanBaseName);
+    if (exactMatch && maxNum === 0) {
+      maxNum = 1;
+    }
+
+    return `${cleanBaseName} (${maxNum + 1})`;
+  }, []);
+
+  const pasteTasks = useCallback(async (targetColumnId) => {
+    if (!clipboard || !currentBoard) return [];
+
+    const { tasks: sourceTasks, isCut, sourceBoardId } = clipboard;
+    const results = [];
+
+    try {
+      for (const sourceTask of sourceTasks) {
+        // For cut operations on the same board, just move the task
+        if (isCut && sourceBoardId === currentBoard._id) {
+          const result = await moveTask(sourceTask._id, targetColumnId);
+          results.push(result);
+          continue;
+        }
+
+        // For copy or cross-board cut, create a new task
+        const existingTasks = tasks;
+        const newName = isCut ? sourceTask.name : generatePasteName(sourceTask.name, existingTasks);
+
+        const newTaskData = {
+          name: newName,
+          description: sourceTask.description || '',
+          columnId: targetColumnId,
+          assignedTo: sourceTask.assignedTo || '',
+          reportedBy: sourceTask.reportedBy || '',
+          priority: sourceTask.priority || 'Medium',
+          taskType: sourceTask.taskType || 'Task',
+          dependsOn: '' // Don't copy dependencies across boards
+        };
+
+        const newTask = await createTask(newTaskData);
+        results.push(newTask);
+
+        // If it was a cut operation, delete the original (only if on a different board)
+        if (isCut && sourceBoardId !== currentBoard._id) {
+          try {
+            await taskApi.delete(sourceTask._id);
+          } catch (err) {
+            console.error('Failed to delete original task after cut:', err);
+          }
+        }
+      }
+
+      // Clear clipboard after cut
+      if (isCut) {
+        setClipboard(null);
+      }
+
+      return results;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  }, [clipboard, currentBoard, tasks, moveTask, createTask, generatePasteName]);
+
+  const clearClipboard = useCallback(() => {
+    setClipboard(null);
+  }, []);
+
   // Sort tasks by dependency (parent tasks come before their dependents)
   const sortTasksByDependency = useCallback((tasksToSort) => {
     // Build a map of task ID to task for quick lookup
@@ -465,6 +607,8 @@ export function AppProvider({ children, user }) {
     error,
     filters,
     user,
+    clipboard,
+    selectedTaskIds,
 
     // Setters
     setCurrentBoard,
@@ -497,7 +641,19 @@ export function AppProvider({ children, user }) {
     attachFilesToTask,
     removeFileFromTask,
     attachFilesToComment,
-    removeFileFromComment
+    removeFileFromComment,
+
+    // Selection operations
+    selectTask,
+    toggleTaskSelection,
+    clearSelection,
+    selectMultipleTasks,
+
+    // Clipboard operations
+    copyTasks,
+    cutTasks,
+    pasteTasks,
+    clearClipboard
   };
 
   return (

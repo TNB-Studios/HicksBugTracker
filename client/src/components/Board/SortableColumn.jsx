@@ -2,7 +2,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Column from './Column';
 
-export default function SortableColumn({ column, tasks, onTaskClick, allTasks }) {
+export default function SortableColumn({ column, tasks, onTaskClick, onTaskDoubleClick, allTasks, selectedTaskIds, registerTaskRef }) {
   const {
     attributes,
     listeners,
@@ -30,8 +30,11 @@ export default function SortableColumn({ column, tasks, onTaskClick, allTasks })
         column={column}
         tasks={tasks}
         onTaskClick={onTaskClick}
+        onTaskDoubleClick={onTaskDoubleClick}
         allTasks={allTasks}
         dragHandleListeners={listeners}
+        selectedTaskIds={selectedTaskIds}
+        registerTaskRef={registerTaskRef}
       />
     </div>
   );

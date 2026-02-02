@@ -4,7 +4,7 @@ import TaskCard from './TaskCard';
 import { useApp } from '../../context/AppContext';
 import { useState } from 'react';
 
-export default function Column({ column, tasks, onTaskClick, allTasks, dragHandleListeners }) {
+export default function Column({ column, tasks, onTaskClick, onTaskDoubleClick, allTasks, dragHandleListeners, selectedTaskIds = [], registerTaskRef }) {
   const { deleteColumn, updateColumn } = useApp();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(column.name);
@@ -90,7 +90,10 @@ export default function Column({ column, tasks, onTaskClick, allTasks, dragHandl
               key={task._id}
               task={task}
               onClick={onTaskClick}
+              onDoubleClick={onTaskDoubleClick}
               allTasks={allTasks}
+              isSelected={selectedTaskIds.includes(String(task._id))}
+              registerTaskRef={registerTaskRef}
             />
           ))}
         </div>

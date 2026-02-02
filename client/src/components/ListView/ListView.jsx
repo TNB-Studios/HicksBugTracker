@@ -6,18 +6,20 @@ import TaskModal from '../TaskModal/TaskModal';
 import './ListView.css';
 
 export default function ListView({ triggerNewTask }) {
-  const { currentBoard, loading, user } = useApp();
-  const [selectedTaskId, setSelectedTaskId] = useState(null);
-  const [panelWidth, setPanelWidth] = useState(400); // Default width in pixels
+  const { currentBoard, loading, selectedTaskIds, selectTask, toggleTaskSelection } = useApp();
+  const [detailTaskId, setDetailTaskId] = useState(null); // Task shown in detail panel
+  const [panelWidth, setPanelWidth] = useState(400);
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const containerRef = useRef(null);
   const isDragging = useRef(false);
+  const prevTriggerNewTask = useRef(triggerNewTask);
 
   // Open new task modal when triggered from header
   useEffect(() => {
-    if (triggerNewTask > 0) {
+    if (triggerNewTask > 0 && triggerNewTask !== prevTriggerNewTask.current) {
       setShowNewTaskModal(true);
     }
+    prevTriggerNewTask.current = triggerNewTask;
   }, [triggerNewTask]);
 
   const handleMouseDown = useCallback((e) => {
@@ -33,7 +35,6 @@ export default function ListView({ triggerNewTask }) {
     const containerRect = containerRef.current.getBoundingClientRect();
     const newWidth = containerRect.right - e.clientX;
 
-    // Constrain between 250px and 60% of container width
     const minWidth = 250;
     const maxWidth = containerRect.width * 0.6;
     setPanelWidth(Math.max(minWidth, Math.min(maxWidth, newWidth)));
@@ -44,6 +45,18 @@ export default function ListView({ triggerNewTask }) {
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
   }, [handleMouseMove]);
+
+  const handleTaskClick = useCallback((taskId, e) => {
+    if (e.ctrlKey || e.metaKey) {
+      toggleTaskSelection(taskId);
+    } else {
+      selectTask(taskId);
+    }
+  }, [selectTask, toggleTaskSelection]);
+
+  const handleTaskDoubleClick = useCallback((taskId) => {
+    setDetailTaskId(taskId);
+  }, []);
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -62,8 +75,9 @@ export default function ListView({ triggerNewTask }) {
     <div className="list-view" ref={containerRef}>
       <div className="list-view-content" style={{ marginRight: panelWidth }}>
         <TaskList
-          selectedTaskId={selectedTaskId}
-          onSelectTask={setSelectedTaskId}
+          selectedTaskIds={selectedTaskIds}
+          onTaskClick={handleTaskClick}
+          onTaskDoubleClick={handleTaskDoubleClick}
         />
       </div>
 
@@ -74,7 +88,7 @@ export default function ListView({ triggerNewTask }) {
       />
 
       <div className="list-view-details" style={{ width: panelWidth }}>
-        <TaskDetailsPanel taskId={selectedTaskId} />
+        <TaskDetailsPanel taskId={detailTaskId} />
       </div>
 
       {showNewTaskModal && (

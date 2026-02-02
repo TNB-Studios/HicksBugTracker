@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import FileUpload from '../FileUpload/FileUpload';
 import UserSelect from '../UserSelect/UserSelect';
+import RichTextEditor from '../RichTextEditor/RichTextEditor';
+import RichTextDisplay from '../RichTextDisplay/RichTextDisplay';
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 const TYPES = ['Task', 'Bug', 'Suggestion'];
@@ -221,12 +223,10 @@ export default function TaskModal({ task: taskProp, onClose }) {
 
           <div className="form-group">
             <label htmlFor="description">Description</label>
-            <textarea
-              id="description"
-              name="description"
+            <RichTextEditor
               value={formData.description}
-              onChange={handleChange}
-              rows={4}
+              onChange={(html) => setFormData(prev => ({ ...prev, description: html }))}
+              placeholder="Enter description..."
             />
           </div>
 
@@ -363,7 +363,7 @@ export default function TaskModal({ task: taskProp, onClose }) {
                       &times;
                     </button>
                   </div>
-                  <p>{comment.text}</p>
+                  <RichTextDisplay content={comment.text} />
                   {currentBoard && (
                     <FileUpload
                       boardId={currentBoard._id}
@@ -388,11 +388,10 @@ export default function TaskModal({ task: taskProp, onClose }) {
                 value={commentAuthor}
                 onChange={(e) => setCommentAuthor(e.target.value)}
               />
-              <textarea
-                placeholder="Add a comment..."
+              <RichTextEditor
                 value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                rows={2}
+                onChange={setNewComment}
+                placeholder="Add a comment..."
               />
               <button
                 type="button"

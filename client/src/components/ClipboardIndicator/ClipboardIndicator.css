@@ -1,0 +1,45 @@
+.clipboard-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.clipboard-indicator.copy {
+  background: rgba(76, 175, 80, 0.3);
+}
+
+.clipboard-indicator.cut {
+  background: rgba(255, 152, 0, 0.3);
+}
+
+.clipboard-icon {
+  font-size: 14px;
+}
+
+.clipboard-text {
+  white-space: nowrap;
+}
+
+.clipboard-text strong {
+  font-weight: 600;
+}
+
+.clipboard-clear {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.clipboard-clear:hover {
+  opacity: 1;
+}

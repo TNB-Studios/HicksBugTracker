@@ -1,5 +1,7 @@
+import { useEffect, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { stripHtml } from '../../utils/sanitize';
 
 const priorityColors = {
   Low: '#4caf50',
@@ -26,7 +28,7 @@ const typeColors = {
   'Suggestion': '#43a047'
 };
 
-export default function TaskCard({ task, onClick, allTasks = [] }) {
+export default function TaskCard({ task, onClick, onDoubleClick, allTasks = [], isSelected = false, registerTaskRef }) {
   // Find the parent task name if there's a dependency
   const parentTask = task.dependsOn ? allTasks.find(t => t._id === task.dependsOn) : null;
   const {
@@ -38,6 +40,23 @@ export default function TaskCard({ task, onClick, allTasks = [] }) {
     isDragging
   } = useSortable({ id: task._id });
 
+  // Combined ref callback for both dnd-kit and drag-select
+  const combinedRef = useCallback((element) => {
+    setNodeRef(element);
+    if (registerTaskRef) {
+      registerTaskRef(task._id, element);
+    }
+  }, [setNodeRef, task._id, registerTaskRef]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (registerTaskRef) {
+        registerTaskRef(task._id, null);
+      }
+    };
+  }, [task._id, registerTaskRef]);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -46,12 +65,13 @@ export default function TaskCard({ task, onClick, allTasks = [] }) {
 
   return (
     <div
-      ref={setNodeRef}
+      ref={combinedRef}
       style={style}
       {...attributes}
       {...listeners}
-      className="task-card"
-      onClick={() => onClick(task)}
+      className={`task-card ${isSelected ? 'selected' : ''}`}
+      onClick={(e) => onClick(task, e)}
+      onDoubleClick={() => onDoubleClick && onDoubleClick(task)}
     >
       <div className="task-card-header">
         <span
@@ -71,9 +91,12 @@ export default function TaskCard({ task, onClick, allTasks = [] }) {
 
       {task.description && (
         <p className="task-description">
-          {task.description.length > 100
-            ? task.description.substring(0, 100) + '...'
-            : task.description}
+          {(() => {
+            const plainText = stripHtml(task.description);
+            return plainText.length > 100
+              ? plainText.substring(0, 100) + '...'
+              : plainText;
+          })()}
         </p>
       )}
 
