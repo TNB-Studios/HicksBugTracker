@@ -60,6 +60,9 @@ export default function Board({ triggerNewTask }) {
   const columnsContainerRef = useRef(null);
   const taskRefs = useRef(new Map()); // Map of taskId -> DOM element
 
+  // Anchor task for Shift+click range selection
+  const [anchorTaskId, setAnchorTaskId] = useState(null);
+
   // Open new task modal when triggered from header
   useEffect(() => {
     if (triggerNewTask > 0 && triggerNewTask !== prevTriggerNewTask.current) {
@@ -394,11 +397,43 @@ export default function Board({ triggerNewTask }) {
   };
 
   const handleTaskClick = (task, e) => {
-    // Ctrl/Cmd+click to toggle selection
-    if (e.ctrlKey || e.metaKey) {
-      toggleTaskSelection(task._id);
-    } else {
+    const filteredTasks = getFilteredTasks();
+
+    // Shift+click for range selection (same column only)
+    if (e.shiftKey && anchorTaskId) {
+      const anchorTask = filteredTasks.find(t => String(t._id) === String(anchorTaskId));
+
+      // Only do range selection if anchor exists and is in the same column
+      if (anchorTask && anchorTask.columnId === task.columnId) {
+        // Get tasks in this column in display order
+        const columnTasks = filteredTasks.filter(t => t.columnId === task.columnId);
+        const anchorIndex = columnTasks.findIndex(t => String(t._id) === String(anchorTaskId));
+        const clickedIndex = columnTasks.findIndex(t => String(t._id) === String(task._id));
+
+        if (anchorIndex !== -1 && clickedIndex !== -1) {
+          const startIndex = Math.min(anchorIndex, clickedIndex);
+          const endIndex = Math.max(anchorIndex, clickedIndex);
+          const tasksInRange = columnTasks.slice(startIndex, endIndex + 1);
+          selectMultipleTasks(tasksInRange.map(t => t._id));
+          return;
+        }
+      }
+      // Anchor not in same column or not found - just select clicked task
       selectTask(task._id);
+      setAnchorTaskId(task._id);
+    }
+    // Ctrl/Cmd+click to toggle selection
+    else if (e.ctrlKey || e.metaKey) {
+      toggleTaskSelection(task._id);
+      // Set anchor to clicked task if nothing selected, or keep existing
+      if (selectedTaskIds.length === 0) {
+        setAnchorTaskId(task._id);
+      }
+    }
+    // Regular click - select single task and set as anchor
+    else {
+      selectTask(task._id);
+      setAnchorTaskId(task._id);
     }
   };
 

@@ -4,6 +4,7 @@ import FileUpload from '../FileUpload/FileUpload';
 import UserSelect from '../UserSelect/UserSelect';
 import RichTextEditor from '../RichTextEditor/RichTextEditor';
 import RichTextDisplay from '../RichTextDisplay/RichTextDisplay';
+import TagSelect from '../TagSelect/TagSelect';
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 const TYPES = ['Task', 'Bug', 'Suggestion'];
@@ -37,7 +38,8 @@ export default function TaskDetailsPanel({ taskId }) {
     reportedBy: '',
     priority: 'Medium',
     taskType: 'Task',
-    dependsOn: ''
+    dependsOn: '',
+    tags: ''
   });
 
   const [newComment, setNewComment] = useState('');
@@ -47,9 +49,17 @@ export default function TaskDetailsPanel({ taskId }) {
   // Get available tasks for dependency dropdown (exclude current task)
   const availableDependencies = tasks.filter(t => t._id !== taskId);
 
+  // Collect all unique tags from existing tasks
+  const allTags = useMemo(() => {
+    const tagSet = new Set();
+    tasks.forEach(task => (task.tags || []).forEach(tag => tagSet.add(tag)));
+    return Array.from(tagSet).sort();
+  }, [tasks]);
+
   // Track if form has unsaved changes
   const isDirty = useMemo(() => {
     if (!task) return false;
+    const taskTags = (task.tags || []).join(', ');
     return (
       formData.name !== (task.name || '') ||
       formData.description !== (task.description || '') ||
@@ -57,7 +67,8 @@ export default function TaskDetailsPanel({ taskId }) {
       formData.assignedTo !== (task.assignedTo || '') ||
       formData.priority !== (task.priority || 'Medium') ||
       formData.taskType !== (task.taskType || 'Task') ||
-      formData.dependsOn !== (task.dependsOn || '')
+      formData.dependsOn !== (task.dependsOn || '') ||
+      formData.tags !== taskTags
     );
   }, [formData, task]);
 
@@ -71,7 +82,8 @@ export default function TaskDetailsPanel({ taskId }) {
         reportedBy: task.reportedBy || '',
         priority: task.priority || 'Medium',
         taskType: task.taskType || 'Task',
-        dependsOn: task.dependsOn || ''
+        dependsOn: task.dependsOn || '',
+        tags: (task.tags || []).join(', ')
       });
     }
   }, [task]);
@@ -84,17 +96,35 @@ export default function TaskDetailsPanel({ taskId }) {
   const handleSave = async () => {
     if (!task || !formData.name.trim()) return;
 
+    console.time('Total Save');
     setSaving(true);
     try {
-      await updateTask(task._id, formData);
+      // Convert tags string to array
+      const tagsArray = formData.tags
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
+
+      const dataToSave = {
+        ...formData,
+        tags: tagsArray
+      };
+
+      console.time('API updateTask');
+      await updateTask(task._id, dataToSave);
+      console.timeEnd('API updateTask');
+
       // If column changed, move the task
       if (formData.columnId !== task.columnId) {
+        console.time('API moveTask');
         await moveTask(task._id, formData.columnId);
+        console.timeEnd('API moveTask');
       }
     } catch (err) {
       alert('Error saving task: ' + err.message);
     } finally {
       setSaving(false);
+      console.timeEnd('Total Save');
     }
   };
 
@@ -297,6 +327,18 @@ export default function TaskDetailsPanel({ taskId }) {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="detail-tags">Tags</label>
+            <TagSelect
+              id="detail-tags"
+              name="tags"
+              value={formData.tags}
+              onChange={handleChange}
+              allTags={allTags}
+              placeholder="Enter tags separated by commas"
+            />
           </div>
 
           <div className="task-meta">

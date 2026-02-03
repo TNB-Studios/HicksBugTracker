@@ -1,0 +1,50 @@
+.tag-select {
+  position: relative;
+  width: 100%;
+}
+
+.tag-select input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #dfe1e6;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.tag-select input:focus {
+  outline: none;
+  border-color: #4c9aff;
+  box-shadow: 0 0 0 2px rgba(76, 154, 255, 0.2);
+}
+
+.tag-select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #dfe1e6;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.tag-select-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #172b4d;
+  transition: background-color 0.15s;
+}
+
+.tag-select-option:hover {
+  background-color: #f4f5f7;
+}
+
+.tag-select-option:active {
+  background-color: #ebecf0;
+}

@@ -120,6 +120,14 @@ export default function TaskCard({ task, onClick, onDoubleClick, allTasks = [], 
         </div>
       )}
 
+      {task.tags && task.tags.length > 0 && (
+        <div className="task-tags">
+          {task.tags.map((tag, idx) => (
+            <span key={idx} className="task-tag">{tag}</span>
+          ))}
+        </div>
+      )}
+
       {task.comments && task.comments.length > 0 && (
         <div className="task-comments-count">
           {task.comments.length} comment{task.comments.length !== 1 ? 's' : ''}

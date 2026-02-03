@@ -2,7 +2,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import './RichTextEditor.css';
 
 const EMOJI_LIST = ['👍', '👎', '❤️', '🎉', '🔥', '⚠️', '❌', '✅', '⭐', '🐛', '💡', '📝'];
@@ -10,25 +10,31 @@ const EMOJI_LIST = ['👍', '👎', '❤️', '🎉', '🔥', '⚠️', '❌', '
 export default function RichTextEditor({ value, onChange, placeholder }) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiRef = useRef(null);
+  const isInternalChange = useRef(false);
+  const lastExternalValue = useRef(value);
+
+  // Memoize extensions to prevent recreation on every render
+  const extensions = useMemo(() => [
+    StarterKit.configure({
+      heading: false,
+      codeBlock: false,
+      blockquote: false,
+      bulletList: false,
+      orderedList: false,
+      listItem: false,
+      horizontalRule: false,
+    }),
+    Underline,
+    Placeholder.configure({
+      placeholder: placeholder || 'Enter text...',
+    }),
+  ], [placeholder]);
 
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: false,
-        codeBlock: false,
-        blockquote: false,
-        bulletList: false,
-        orderedList: false,
-        listItem: false,
-        horizontalRule: false,
-      }),
-      Underline,
-      Placeholder.configure({
-        placeholder: placeholder || 'Enter text...',
-      }),
-    ],
+    extensions,
     content: value || '',
     onUpdate: ({ editor }) => {
+      isInternalChange.current = true;
       const html = editor.getHTML();
       // Return empty string if editor only contains empty paragraph
       const isEmpty = html === '<p></p>' || html === '';
@@ -36,11 +42,21 @@ export default function RichTextEditor({ value, onChange, placeholder }) {
     },
   });
 
-  // Sync external value changes
+  // Sync external value changes (only when value actually changed externally)
   useEffect(() => {
-    if (editor && value !== editor.getHTML()) {
+    // Skip if change originated from editor typing
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      lastExternalValue.current = value;
+      return;
+    }
+
+    // Only update if value actually changed from external source
+    if (editor && value !== lastExternalValue.current) {
+      lastExternalValue.current = value;
       const isEmpty = !value || value === '<p></p>';
-      if (isEmpty && editor.getHTML() === '<p></p>') return;
+      const editorEmpty = editor.getHTML() === '<p></p>';
+      if (isEmpty && editorEmpty) return;
       editor.commands.setContent(value || '');
     }
   }, [value, editor]);

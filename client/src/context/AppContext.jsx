@@ -21,7 +21,8 @@ export function AppProvider({ children, user }) {
     state: [],
     taskType: [],
     assignedTo: '',
-    search: ''
+    search: '',
+    tags: []
   });
 
   // Fetch all boards (filtered by user permissions)
@@ -228,9 +229,13 @@ export function AppProvider({ children, user }) {
 
   const updateTask = async (id, data) => {
     try {
+      console.time('updateTask API call');
       const response = await taskApi.update(id, data);
+      console.timeEnd('updateTask API call');
       const updatedTask = response.data.data;
+      console.time('updateTask setTasks');
       setTasks(prev => prev.map(t => t._id === id ? updatedTask : t));
+      console.timeEnd('updateTask setTasks');
       return updatedTask;
     } catch (err) {
       setError(err.message);
@@ -585,6 +590,15 @@ export function AppProvider({ children, user }) {
         const nameMatch = task.name?.toLowerCase().includes(searchLower);
         const descMatch = task.description?.toLowerCase().includes(searchLower);
         if (!nameMatch && !descMatch) {
+          return false;
+        }
+      }
+
+      // Tags filter (task must have at least one of the selected tags)
+      if (filters.tags.length > 0) {
+        const taskTags = task.tags || [];
+        const hasMatchingTag = filters.tags.some(tag => taskTags.includes(tag));
+        if (!hasMatchingTag) {
           return false;
         }
       }

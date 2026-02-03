@@ -4,6 +4,7 @@ import FileUpload from '../FileUpload/FileUpload';
 import UserSelect from '../UserSelect/UserSelect';
 import RichTextEditor from '../RichTextEditor/RichTextEditor';
 import RichTextDisplay from '../RichTextDisplay/RichTextDisplay';
+import TagSelect from '../TagSelect/TagSelect';
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 const TYPES = ['Task', 'Bug', 'Suggestion'];
@@ -42,15 +43,24 @@ export default function TaskModal({ task: taskProp, onClose }) {
     reportedBy: '',
     priority: 'Medium',
     taskType: 'Task',
-    dependsOn: ''
+    dependsOn: '',
+    tags: ''
   });
 
   // Get available tasks for dependency dropdown (exclude current task)
   const availableDependencies = tasks.filter(t => t._id !== task?._id);
 
+  // Collect all unique tags from existing tasks
+  const allTags = useMemo(() => {
+    const tagSet = new Set();
+    tasks.forEach(task => (task.tags || []).forEach(tag => tagSet.add(tag)));
+    return Array.from(tagSet).sort();
+  }, [tasks]);
+
   // Track if form has unsaved changes (only relevant for editing existing tasks)
   const isDirty = useMemo(() => {
     if (!task) return false; // New task - no dirty tracking needed
+    const taskTags = (task.tags || []).join(', ');
     return (
       formData.name !== (task.name || '') ||
       formData.description !== (task.description || '') ||
@@ -58,7 +68,8 @@ export default function TaskModal({ task: taskProp, onClose }) {
       formData.assignedTo !== (task.assignedTo || '') ||
       formData.priority !== (task.priority || 'Medium') ||
       formData.taskType !== (task.taskType || 'Task') ||
-      formData.dependsOn !== (task.dependsOn || '')
+      formData.dependsOn !== (task.dependsOn || '') ||
+      formData.tags !== taskTags
     );
   }, [formData, task]);
 
@@ -76,7 +87,8 @@ export default function TaskModal({ task: taskProp, onClose }) {
         reportedBy: task.reportedBy || '',
         priority: task.priority || 'Medium',
         taskType: task.taskType || 'Task',
-        dependsOn: task.dependsOn || ''
+        dependsOn: task.dependsOn || '',
+        tags: (task.tags || []).join(', ')
       });
     } else if (columns.length > 0) {
       // New task - use cached assignedTo, auto-fill reportedBy with logged-in user
@@ -103,25 +115,45 @@ export default function TaskModal({ task: taskProp, onClose }) {
       return;
     }
 
+    console.time('Total Save (Modal)');
     try {
       // Cache assignedTo for next time
       if (formData.assignedTo) {
         localStorage.setItem(CACHE_ASSIGNED_TO, formData.assignedTo);
       }
 
+      // Convert tags string to array
+      const tagsArray = formData.tags
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
+
+      const dataToSave = {
+        ...formData,
+        tags: tagsArray
+      };
+
       if (task) {
         // Update task fields
-        await updateTask(task._id, formData);
+        console.time('API updateTask (Modal)');
+        await updateTask(task._id, dataToSave);
+        console.timeEnd('API updateTask (Modal)');
         // If column changed, move the task (which also updates state)
         if (formData.columnId !== task.columnId) {
+          console.time('API moveTask (Modal)');
           await moveTask(task._id, formData.columnId);
+          console.timeEnd('API moveTask (Modal)');
         }
       } else {
-        await createTask(formData);
+        console.time('API createTask (Modal)');
+        await createTask(dataToSave);
+        console.timeEnd('API createTask (Modal)');
       }
       onClose();
     } catch (err) {
       alert('Error saving task: ' + err.message);
+    } finally {
+      console.timeEnd('Total Save (Modal)');
     }
   };
 
@@ -315,6 +347,18 @@ export default function TaskModal({ task: taskProp, onClose }) {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="tags">Tags</label>
+            <TagSelect
+              id="tags"
+              name="tags"
+              value={formData.tags}
+              onChange={handleChange}
+              allTags={allTags}
+              placeholder="Enter tags separated by commas (e.g., frontend, urgent, v2.0)"
+            />
           </div>
 
           {task && (

@@ -95,6 +95,10 @@ const taskSchema = new mongoose.Schema(
       ref: 'Task',
       default: null
     },
+    tags: {
+      type: [String],
+      default: []
+    },
     files: {
       type: [fileSchema],
       default: [],
@@ -113,6 +117,8 @@ taskSchema.index({ state: 1 });
 taskSchema.index({ assignedTo: 1 });
 taskSchema.index({ taskType: 1 });
 taskSchema.index({ dependsOn: 1 });
-taskSchema.index({ name: 'text', description: 'text' });
+taskSchema.index({ tags: 1 });
+// Text index on name only - description excluded since it now contains HTML
+taskSchema.index({ name: 'text' });
 
 module.exports = mongoose.model('Task', taskSchema);

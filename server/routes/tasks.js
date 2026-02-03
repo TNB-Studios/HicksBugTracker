@@ -71,7 +71,7 @@ router.get('/tasks/:id', async (req, res, next) => {
 // @desc    Create a new task
 router.post('/tasks', async (req, res, next) => {
   try {
-    const { name, description, boardId, columnId, state, assignedTo, reportedBy, priority, taskType, dependsOn } = req.body;
+    const { name, description, boardId, columnId, state, assignedTo, reportedBy, priority, taskType, dependsOn, tags } = req.body;
 
     // Verify column exists
     const column = await Column.findById(columnId);
@@ -89,7 +89,8 @@ router.post('/tasks', async (req, res, next) => {
       reportedBy,
       priority,
       taskType: taskType || 'Task',
-      dependsOn: dependsOn || null
+      dependsOn: dependsOn || null,
+      tags: tags || []
     });
 
     // Add task to column's taskIds
@@ -105,11 +106,14 @@ router.post('/tasks', async (req, res, next) => {
 // @route   PUT /api/tasks/:id
 // @desc    Update a task
 router.put('/tasks/:id', async (req, res, next) => {
+  const startTime = Date.now();
   try {
-    const { name, description, state, assignedTo, reportedBy, priority, taskType, dependsOn } = req.body;
+    const { name, description, state, assignedTo, reportedBy, priority, taskType, dependsOn, tags } = req.body;
 
     // Get current task to detect changes
+    console.time('findById');
     const currentTask = await Task.findById(req.params.id);
+    console.timeEnd('findById');
     if (!currentTask) {
       return res.status(404).json({ success: false, error: 'Task not found' });
     }
@@ -125,12 +129,15 @@ router.put('/tasks/:id', async (req, res, next) => {
     if (priority !== undefined) updateData.priority = priority;
     if (taskType !== undefined) updateData.taskType = taskType;
     if (dependsOn !== undefined) updateData.dependsOn = dependsOn || null;
+    if (tags !== undefined) updateData.tags = tags;
 
+    console.time('findByIdAndUpdate');
     const task = await Task.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true, runValidators: true }
     );
+    console.timeEnd('findByIdAndUpdate');
 
     // Check for assignee change and trigger email rules
     if (assignedTo !== undefined && assignedTo !== previousAssignee) {
@@ -141,6 +148,7 @@ router.put('/tasks/:id', async (req, res, next) => {
       }, board).catch(err => console.error('Email rule error:', err));
     }
 
+    console.log(`Total PUT /tasks/${req.params.id}: ${Date.now() - startTime}ms`);
     res.json({ success: true, data: task });
   } catch (error) {
     next(error);
