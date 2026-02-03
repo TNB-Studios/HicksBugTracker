@@ -92,7 +92,8 @@ export default function AdminSettings({ user: currentUser, onClose }) {
     try {
       await userApi.updatePermissions(userId, {
         canAdminBoards: newPermissions.canAdminBoards,
-        canDeleteTasks: newPermissions.canDeleteTasks
+        canDeleteTasks: newPermissions.canDeleteTasks,
+        canManageEmailRules: newPermissions.canManageEmailRules
       });
 
       setUsers(prev => prev.map(u =>
