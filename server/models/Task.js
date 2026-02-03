@@ -47,6 +47,10 @@ const commentSchema = new mongoose.Schema(
 
 const taskSchema = new mongoose.Schema(
   {
+    taskNumber: {
+      type: Number,
+      index: true
+    },
     name: {
       type: String,
       required: [true, 'Task name is required'],
@@ -120,5 +124,7 @@ taskSchema.index({ dependsOn: 1 });
 taskSchema.index({ tags: 1 });
 // Text index on name only - description excluded since it now contains HTML
 taskSchema.index({ name: 'text' });
+// Compound index for task number uniqueness per board
+taskSchema.index({ boardId: 1, taskNumber: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Task', taskSchema);

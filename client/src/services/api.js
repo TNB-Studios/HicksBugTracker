@@ -73,6 +73,12 @@ export const emailConfigApi = {
   test: (testRecipient) => api.post('/email-config/test', { testRecipient })
 };
 
+// User Column Order API (user-specific task ordering)
+export const userColumnOrderApi = {
+  getForBoard: (boardId) => api.get(`/user-column-orders/${boardId}`),
+  save: (boardId, columnId, taskIds) => api.put(`/user-column-orders/${boardId}/${columnId}`, { taskIds })
+};
+
 // File API
 export const fileApi = {
   // Upload files to a board (returns file metadata)

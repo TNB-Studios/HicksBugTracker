@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 
 export default function BoardSelector() {
-  const { boards, currentBoard, setCurrentBoard, createBoard, deleteBoard, updateBoard, user } = useApp();
+  const { boards, currentBoard, setCurrentBoard, createBoard, updateBoard, user } = useApp();
   const canAdminBoards = user?.permissions?.canAdminBoards || false;
 
   const [showCreate, setShowCreate] = useState(false);
@@ -36,18 +36,6 @@ export default function BoardSelector() {
       setShowCreate(false);
     } catch (err) {
       alert('Error creating board: ' + err.message);
-    }
-  };
-
-  const handleDeleteBoard = async () => {
-    if (!currentBoard) return;
-
-    if (window.confirm(`Delete board "${currentBoard.name}" and all its tasks? This cannot be undone.`)) {
-      try {
-        await deleteBoard(currentBoard._id);
-      } catch (err) {
-        alert('Error deleting board: ' + err.message);
-      }
     }
   };
 
@@ -105,22 +93,13 @@ export default function BoardSelector() {
         )}
 
         {currentBoard && canAdminBoards && (
-          <>
-            <button
-              className="btn btn-icon"
-              onClick={startEditing}
-              title="Rename board"
-            >
-              ✎
-            </button>
-            <button
-              className="btn btn-icon btn-danger"
-              onClick={handleDeleteBoard}
-              title="Delete board"
-            >
-              🗑
-            </button>
-          </>
+          <button
+            className="btn btn-icon"
+            onClick={startEditing}
+            title="Rename board"
+          >
+            ✎
+          </button>
         )}
       </div>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { userApi, boardApi } from '../../services/api';
+import { useApp } from '../../context/AppContext';
 import BoardPermissions from './BoardPermissions';
 import EmailRulesManager from './EmailRulesManager';
 import EmailConfigSection from './EmailConfigSection';
@@ -27,6 +28,7 @@ function CollapsibleSection({ title, description, defaultOpen = true, children }
 }
 
 export default function AdminSettings({ user: currentUser, onClose }) {
+  const { deleteBoard } = useApp();
   const showUserPermissions = currentUser?.isAdmin;
   const [users, setUsers] = useState([]);
   const [boards, setBoards] = useState([]);
@@ -34,6 +36,7 @@ export default function AdminSettings({ user: currentUser, onClose }) {
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
+  const [deletingBoard, setDeletingBoard] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -110,6 +113,29 @@ export default function AdminSettings({ user: currentUser, onClose }) {
 
   const isUserAdmin = (user) => {
     return user.groups?.some(g => g.toLowerCase().replace(/\s+/g, '-') === 'hicks-admins');
+  };
+
+  const handleDeleteBoard = async (board) => {
+    // First confirmation
+    if (!window.confirm(`Delete board "${board.name}" and all its tasks?\n\nThis cannot be undone.`)) {
+      return;
+    }
+
+    // Second confirmation
+    if (!window.confirm(`REALLY delete "${board.name}"?\n\nAll tasks, columns, and data will be permanently lost.`)) {
+      return;
+    }
+
+    setDeletingBoard(board._id);
+    try {
+      await deleteBoard(board._id);
+      // Remove from local state
+      setBoards(prev => prev.filter(b => b._id !== board._id));
+    } catch (err) {
+      setError('Error deleting board: ' + err.message);
+    } finally {
+      setDeletingBoard(null);
+    }
   };
 
   return (
@@ -200,6 +226,44 @@ export default function AdminSettings({ user: currentUser, onClose }) {
                   <div className="admin-settings-note">
                     <p><strong>Note:</strong> Users in the "Hicks Admins" group automatically have all permissions.</p>
                   </div>
+                </CollapsibleSection>
+              )}
+
+              {/* Board Management Section - Admin Only */}
+              {showUserPermissions && (
+                <CollapsibleSection
+                  title="Board Management"
+                  description="Delete boards"
+                  defaultOpen={false}
+                >
+                  <table className="users-table">
+                    <thead>
+                      <tr>
+                        <th>Board Name</th>
+                        <th>Description</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {boards.map(board => (
+                        <tr key={board._id}>
+                          <td>{board.name}</td>
+                          <td>{board.description || '-'}</td>
+                          <td>{new Date(board.createdAt).toLocaleDateString()}</td>
+                          <td>
+                            <button
+                              className="btn btn-small btn-danger"
+                              onClick={() => handleDeleteBoard(board)}
+                              disabled={deletingBoard === board._id}
+                            >
+                              {deletingBoard === board._id ? 'Deleting...' : 'Delete'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </CollapsibleSection>
               )}
 

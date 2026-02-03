@@ -180,9 +180,30 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // @route   DELETE /api/boards/:id
-// @desc    Delete board and all its columns and tasks
+// @desc    Delete board and all its columns and tasks (admin only)
 router.delete('/:id', async (req, res, next) => {
   try {
+    // Check if user has permission to admin boards
+    const groups = req.oidc.user.groups || [];
+    const isAdmin = groups.some(g => g.toLowerCase().replace(/\s+/g, '-') === 'hicks-admins');
+
+    // Also check for canAdminBoards attribute
+    let canAdminBoards = isAdmin;
+    if (!canAdminBoards) {
+      try {
+        const userEmail = req.oidc.user.email;
+        const userData = await authentikFetch(`/core/users/?search=${encodeURIComponent(userEmail)}`);
+        const authentikUser = userData.results?.find(u => u.email === userEmail);
+        canAdminBoards = authentikUser?.attributes?.hicks_can_admin_boards || false;
+      } catch (err) {
+        console.error('Error checking user permissions:', err.message);
+      }
+    }
+
+    if (!canAdminBoards) {
+      return res.status(403).json({ success: false, error: 'Admin permission required to delete boards' });
+    }
+
     const board = await Board.findById(req.params.id);
 
     if (!board) {

@@ -1,6 +1,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import TaskCard from './TaskCard';
+import ColumnSortMenu from './ColumnSortMenu';
 import { useApp } from '../../context/AppContext';
 import { useState } from 'react';
 
@@ -69,6 +70,7 @@ export default function Column({ column, tasks, onTaskClick, onTaskDoubleClick, 
             <span className="task-count">({tasks.length})</span>
           </h3>
         )}
+        <ColumnSortMenu columnId={column._id} />
         {!column.isDefault && (
           <button
             className="column-delete-btn"

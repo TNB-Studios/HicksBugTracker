@@ -16,7 +16,11 @@ const boardSchema = new mongoose.Schema(
     columnOrder: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Column'
-    }]
+    }],
+    nextTaskNumber: {
+      type: Number,
+      default: 1
+    }
   },
   {
     timestamps: true

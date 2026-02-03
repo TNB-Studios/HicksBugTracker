@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { boardApi, columnApi, taskApi, fileApi } from '../services/api';
+import { boardApi, columnApi, taskApi, fileApi, userColumnOrderApi } from '../services/api';
 
 const AppContext = createContext();
 
@@ -15,6 +15,9 @@ export function AppProvider({ children, user }) {
   // Clipboard for copy/cut/paste (supports multiple tasks)
   const [clipboard, setClipboard] = useState(null); // { tasks: [], isCut, sourceBoardId }
   const [selectedTaskIds, setSelectedTaskIds] = useState([]); // For clipboard operations (multi-select)
+
+  // User-specific task order per column: { [columnId]: [taskId, ...] }
+  const [userTaskOrder, setUserTaskOrder] = useState({});
 
   // Filters
   const [filters, setFilters] = useState({
@@ -80,6 +83,20 @@ export function AppProvider({ children, user }) {
     }
   }, []);
 
+  // Fetch user's column orders for a board
+  const fetchUserColumnOrders = useCallback(async (boardId) => {
+    if (!boardId) return {};
+    try {
+      const response = await userColumnOrderApi.getForBoard(boardId);
+      const orders = response.data.data;
+      setUserTaskOrder(orders);
+      return orders;
+    } catch (err) {
+      console.error('Error fetching user column orders:', err.message);
+      return {};
+    }
+  }, []);
+
   // Load boards on mount
   useEffect(() => {
     const init = async () => {
@@ -99,8 +116,9 @@ export function AppProvider({ children, user }) {
     if (currentBoardId) {
       fetchBoard(currentBoardId);
       fetchBoardUsers(currentBoardId);
+      fetchUserColumnOrders(currentBoardId);
     }
-  }, [currentBoardId, fetchBoard, fetchBoardUsers]);
+  }, [currentBoardId, fetchBoard, fetchBoardUsers, fetchUserColumnOrders]);
 
   // Board operations
   const createBoard = async (name, description) => {
@@ -566,6 +584,74 @@ export function AppProvider({ children, user }) {
     return tasksWithDepth.map(item => item.task);
   }, []);
 
+  // Save user's column order for a specific column
+  const setUserColumnOrder = useCallback(async (columnId, taskIds) => {
+    if (!currentBoard) return;
+    const colIdStr = String(columnId);
+    const taskIdStrs = taskIds.map(id => String(id));
+
+    // Optimistic update
+    setUserTaskOrder(prev => ({
+      ...prev,
+      [colIdStr]: taskIdStrs
+    }));
+
+    // Persist to database
+    try {
+      await userColumnOrderApi.save(currentBoard._id, columnId, taskIds);
+    } catch (err) {
+      console.error('Error saving user column order:', err.message);
+    }
+  }, [currentBoard]);
+
+  // Sort column tasks by a specific field
+  const PRIORITY_ORDER = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+
+  const sortColumnTasks = useCallback((columnId, sortBy, sortDir) => {
+    const colIdStr = String(columnId);
+
+    // Get tasks in this column
+    const columnTasks = tasks.filter(t => String(t.columnId) === colIdStr);
+
+    // Sort them
+    const sortedTasks = [...columnTasks].sort((a, b) => {
+      let cmp = 0;
+      switch (sortBy) {
+        case 'priority':
+          cmp = (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2);
+          break;
+        case 'assignedTo':
+          cmp = (a.assignedTo || '').localeCompare(b.assignedTo || '');
+          break;
+        case 'reportedBy':
+          cmp = (a.reportedBy || '').localeCompare(b.reportedBy || '');
+          break;
+        case 'taskType':
+          cmp = (a.taskType || '').localeCompare(b.taskType || '');
+          break;
+        case 'createdAt':
+          cmp = new Date(a.createdAt) - new Date(b.createdAt);
+          break;
+        case 'name':
+          cmp = (a.name || '').localeCompare(b.name || '');
+          break;
+        case 'tags':
+          // Sort by first tag alphabetically
+          const aTag = (a.tags || [])[0] || '';
+          const bTag = (b.tags || [])[0] || '';
+          cmp = aTag.localeCompare(bTag);
+          break;
+        default:
+          cmp = 0;
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    // Save the new order
+    const sortedIds = sortedTasks.map(t => t._id);
+    setUserColumnOrder(columnId, sortedIds);
+  }, [tasks, setUserColumnOrder]);
+
   // Filter tasks
   const getFilteredTasks = useCallback(() => {
     const filtered = tasks.filter(task => {
@@ -623,6 +709,7 @@ export function AppProvider({ children, user }) {
     user,
     clipboard,
     selectedTaskIds,
+    userTaskOrder,
 
     // Setters
     setCurrentBoard,
@@ -667,7 +754,11 @@ export function AppProvider({ children, user }) {
     copyTasks,
     cutTasks,
     pasteTasks,
-    clearClipboard
+    clearClipboard,
+
+    // User column order operations
+    setUserColumnOrder,
+    sortColumnTasks
   };
 
   return (

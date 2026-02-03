@@ -14,7 +14,10 @@
       "Bash(cat:*)",
       "Bash(ls:*)",
       "mcp__ide__getDiagnostics",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(grep:*)",
+      "Bash(node -c:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

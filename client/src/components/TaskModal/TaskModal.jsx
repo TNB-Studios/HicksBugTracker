@@ -222,7 +222,11 @@ export default function TaskModal({ task: taskProp, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{task ? 'Edit Task' : 'New Task'}</h2>
+          <h2>
+            {task
+              ? `${task.taskType || 'Task'}${task.taskNumber ? ` #${task.taskNumber}` : ''}`
+              : 'New Task'}
+          </h2>
           <div className="modal-header-right">
             {task ? (
               isDirty && (
@@ -363,9 +367,9 @@ export default function TaskModal({ task: taskProp, onClose }) {
 
           {task && (
             <div className="task-meta">
-              <p>Created: {formatDate(task.createdAt)}</p>
+              <span>Created: {formatDate(task.createdAt)}</span>
               {task.updatedAt !== task.createdAt && (
-                <p>Updated: {formatDate(task.updatedAt)}</p>
+                <span className="task-meta-right">Updated: {formatDate(task.updatedAt)}</span>
               )}
             </div>
           )}

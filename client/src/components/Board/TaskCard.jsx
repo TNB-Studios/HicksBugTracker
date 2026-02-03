@@ -80,6 +80,9 @@ export default function TaskCard({ task, onClick, onDoubleClick, allTasks = [], 
         >
           {task.taskType || 'Task'}
         </span>
+        {task.taskNumber && (
+          <span className="task-number">#{task.taskNumber}</span>
+        )}
         <span className="task-name">{task.name}</span>
         <span
           className="task-priority"

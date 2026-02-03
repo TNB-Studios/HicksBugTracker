@@ -41,7 +41,9 @@ export default function Board({ triggerNewTask }) {
     selectTask,
     toggleTaskSelection,
     clearSelection,
-    selectMultipleTasks
+    selectMultipleTasks,
+    userTaskOrder,
+    setUserColumnOrder
   } = useApp();
 
   const [activeTask, setActiveTask] = useState(null);
@@ -165,22 +167,25 @@ export default function Board({ triggerNewTask }) {
   const getTasksForColumn = (columnId) => {
     const colIdStr = String(columnId);
     const column = columns.find(c => String(c._id) === colIdStr);
-    const taskIds = column?.taskIds?.map(id => String(id)) || [];
 
-    return filteredTasks
-      .filter(task => String(task.columnId) === colIdStr)
-      .sort((a, b) => {
-        const aIndex = taskIds.indexOf(String(a._id));
-        const bIndex = taskIds.indexOf(String(b._id));
-        // Tasks in taskIds array are sorted by their position
-        // Tasks not in array go to the end, sorted by createdAt
-        if (aIndex === -1 && bIndex === -1) {
-          return new Date(a.createdAt) - new Date(b.createdAt);
-        }
-        if (aIndex === -1) return 1;
-        if (bIndex === -1) return -1;
-        return aIndex - bIndex;
-      });
+    // Use user's custom order if available, otherwise fall back to column.taskIds
+    const userOrder = userTaskOrder[colIdStr];
+    const taskIds = userOrder || column?.taskIds?.map(id => String(id)) || [];
+
+    const columnTasks = filteredTasks.filter(task => String(task.columnId) === colIdStr);
+
+    return columnTasks.sort((a, b) => {
+      const aIndex = taskIds.indexOf(String(a._id));
+      const bIndex = taskIds.indexOf(String(b._id));
+      // Tasks in taskIds array are sorted by their position
+      // Tasks not in array go to the beginning (new tasks), sorted by createdAt desc
+      if (aIndex === -1 && bIndex === -1) {
+        return new Date(b.createdAt) - new Date(a.createdAt); // Newest first at top
+      }
+      if (aIndex === -1) return -1; // New tasks go to top
+      if (bIndex === -1) return 1;
+      return aIndex - bIndex;
+    });
   };
 
   // Find all tasks in dependency chain that need to be moved
@@ -354,6 +359,12 @@ export default function Board({ triggerNewTask }) {
           return moveTask(t._id, targetColumnId, insertPosition);
         })
       );
+
+      // Save user order for target column after multi-task move
+      const updatedColumnTasks = getTasksForColumn(targetColumnId);
+      // Recalculate after state update - need to get from what the order will be
+      const newOrder = computeNewTaskOrder(columnTasks, sortedDraggedTasks.map(t => t._id), targetColumnId, position, isSameColumn);
+      setUserColumnOrder(targetColumnId, newOrder);
       return;
     }
 
@@ -376,6 +387,33 @@ export default function Board({ triggerNewTask }) {
     }
 
     await moveTask(taskId, targetColumnId, position);
+
+    // Save user order for target column after single task move
+    const targetColumnTasks = getTasksForColumn(targetColumnId);
+    const newOrder = computeNewTaskOrder(targetColumnTasks, [taskIdStr], targetColumnId, position, isSameColumn);
+    setUserColumnOrder(targetColumnId, newOrder);
+  };
+
+  // Compute the new task order after a drag operation
+  const computeNewTaskOrder = (currentColumnTasks, movedTaskIds, targetColumnId, position, isSameColumn) => {
+    const taskIdStrs = movedTaskIds.map(id => String(id));
+
+    // Get current order
+    let currentIds = currentColumnTasks.map(t => String(t._id));
+
+    if (isSameColumn) {
+      // Remove moved tasks from current position
+      currentIds = currentIds.filter(id => !taskIdStrs.includes(id));
+    }
+
+    // Insert at new position
+    if (position !== undefined && position >= 0) {
+      currentIds.splice(position, 0, ...taskIdStrs);
+    } else {
+      currentIds.push(...taskIdStrs);
+    }
+
+    return currentIds;
   };
 
   const handleDependencyDialogConfirm = async () => {

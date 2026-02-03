@@ -79,7 +79,27 @@ router.post('/tasks', async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Column not found' });
     }
 
+    // Atomically get and increment the task number for this board
+    const board = await Board.findByIdAndUpdate(
+      boardId,
+      { $inc: { nextTaskNumber: 1 } },
+      { new: false } // Return the document BEFORE the update (so we get the current number)
+    );
+
+    if (!board) {
+      return res.status(404).json({ success: false, error: 'Board not found' });
+    }
+
+    // Use nextTaskNumber (defaults to 1 if not set on old boards)
+    const taskNumber = board.nextTaskNumber || 1;
+
+    // If board didn't have nextTaskNumber, set it for next time
+    if (!board.nextTaskNumber) {
+      await Board.findByIdAndUpdate(boardId, { nextTaskNumber: 2 });
+    }
+
     const task = await Task.create({
+      taskNumber,
       name,
       description,
       boardId,
