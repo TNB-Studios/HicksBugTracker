@@ -560,6 +560,7 @@ body {
   padding: 2px 6px;
   border-radius: 3px;
   color: white;
+  margin-left: auto;
 }
 
 .task-tags {
@@ -855,6 +856,10 @@ body {
   border-top: 1px solid #dfe1e6;
 }
 
+.modal-footer-spacer {
+  flex: 1;
+}
+
 /* Comments */
 .comments-section {
   padding: 20px;
@@ -895,8 +900,27 @@ body {
   color: #8993a4;
 }
 
-.comment-delete {
+.comment-email {
+  font-size: 12px;
+  color: #8993a4;
+  margin-left: 4px;
+}
+
+.comment-edit {
+  background: none;
+  border: none;
+  color: #8993a4;
+  cursor: pointer;
+  font-size: 14px;
   margin-left: auto;
+  padding: 0 4px;
+}
+
+.comment-edit:hover {
+  color: #0079bf;
+}
+
+.comment-delete {
   background: none;
   border: none;
   color: #8993a4;
@@ -906,6 +930,21 @@ body {
 
 .comment-delete:hover {
   color: #eb5a46;
+}
+
+.comment-edit-area {
+  margin-top: 8px;
+}
+
+.comment-edit-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn-sm {
+  padding: 4px 12px;
+  font-size: 12px;
 }
 
 .comment p {

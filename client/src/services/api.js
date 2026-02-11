@@ -45,7 +45,8 @@ export const taskApi = {
   move: (id, columnId, position) => api.put(`/tasks/${id}/move`, { columnId, position }),
   delete: (id) => api.delete(`/tasks/${id}`),
   addComment: (id, data) => api.post(`/tasks/${id}/comments`, data),
-  deleteComment: (id, commentId) => api.delete(`/tasks/${id}/comments/${commentId}`)
+  deleteComment: (id, commentId) => api.delete(`/tasks/${id}/comments/${commentId}`),
+  editComment: (id, commentId, data) => api.put(`/tasks/${id}/comments/${commentId}`, data)
 };
 
 // User API (admin only)

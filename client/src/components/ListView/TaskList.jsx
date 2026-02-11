@@ -159,6 +159,10 @@ export default function TaskList({ selectedTaskIds = [], onTaskClick, onTaskDoub
             {task.taskType?.[0] || 'T'}
           </span>
 
+          {task.taskNumber && (
+            <span className="task-list-number">#{task.taskNumber}</span>
+          )}
+
           <span className="task-list-name">{task.name}</span>
 
           <span className="task-list-state">{getColumnName(task.columnId)}</span>
@@ -170,9 +174,7 @@ export default function TaskList({ selectedTaskIds = [], onTaskClick, onTaskDoub
             {task.priority?.[0] || 'M'}
           </span>
 
-          {task.assignedTo && (
-            <span className="task-list-assigned">{task.assignedTo}</span>
-          )}
+          <span className="task-list-assigned">{task.assignedTo || ''}</span>
         </div>
 
         {hasChildren && isExpanded && (

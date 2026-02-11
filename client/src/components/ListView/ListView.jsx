@@ -1,18 +1,14 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import TaskList from './TaskList';
-import TaskDetailsPanel from './TaskDetailsPanel';
 import TaskModal from '../TaskModal/TaskModal';
 import './ListView.css';
 
 export default function ListView({ triggerNewTask }) {
-  const { currentBoard, loading, selectedTaskIds, selectTask, toggleTaskSelection, selectMultipleTasks, getFilteredTasks } = useApp();
-  const [detailTaskId, setDetailTaskId] = useState(null); // Task shown in detail panel
-  const [panelWidth, setPanelWidth] = useState(400);
+  const { currentBoard, loading, tasks, selectedTaskIds, selectTask, toggleTaskSelection, selectMultipleTasks, getFilteredTasks } = useApp();
+  const [editingTask, setEditingTask] = useState(null);
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [anchorTaskId, setAnchorTaskId] = useState(null); // For Shift+click range selection
-  const containerRef = useRef(null);
-  const isDragging = useRef(false);
   const prevTriggerNewTask = useRef(triggerNewTask);
 
   // Open new task modal when triggered from header
@@ -22,30 +18,6 @@ export default function ListView({ triggerNewTask }) {
     }
     prevTriggerNewTask.current = triggerNewTask;
   }, [triggerNewTask]);
-
-  const handleMouseDown = useCallback((e) => {
-    isDragging.current = true;
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    e.preventDefault();
-  }, []);
-
-  const handleMouseMove = useCallback((e) => {
-    if (!isDragging.current || !containerRef.current) return;
-
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const newWidth = containerRect.right - e.clientX;
-
-    const minWidth = 250;
-    const maxWidth = containerRect.width * 0.6;
-    setPanelWidth(Math.max(minWidth, Math.min(maxWidth, newWidth)));
-  }, []);
-
-  const handleMouseUp = useCallback(() => {
-    isDragging.current = false;
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-  }, [handleMouseMove]);
 
   const handleTaskClick = useCallback((taskId, e) => {
     const filteredTasks = getFilteredTasks();
@@ -81,8 +53,11 @@ export default function ListView({ triggerNewTask }) {
   }, [selectTask, toggleTaskSelection, selectMultipleTasks, getFilteredTasks, anchorTaskId, selectedTaskIds.length]);
 
   const handleTaskDoubleClick = useCallback((taskId) => {
-    setDetailTaskId(taskId);
-  }, []);
+    const task = tasks.find(t => t._id === taskId);
+    if (task) {
+      setEditingTask(task);
+    }
+  }, [tasks]);
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -98,8 +73,8 @@ export default function ListView({ triggerNewTask }) {
   }
 
   return (
-    <div className="list-view" ref={containerRef}>
-      <div className="list-view-content" style={{ marginRight: panelWidth }}>
+    <div className="list-view">
+      <div className="list-view-content">
         <TaskList
           selectedTaskIds={selectedTaskIds}
           onTaskClick={handleTaskClick}
@@ -107,20 +82,17 @@ export default function ListView({ triggerNewTask }) {
         />
       </div>
 
-      <div
-        className="list-view-resizer"
-        style={{ right: panelWidth }}
-        onMouseDown={handleMouseDown}
-      />
-
-      <div className="list-view-details" style={{ width: panelWidth }}>
-        <TaskDetailsPanel taskId={detailTaskId} />
-      </div>
-
       {showNewTaskModal && (
         <TaskModal
           task={null}
           onClose={() => setShowNewTaskModal(false)}
+        />
+      )}
+
+      {editingTask && (
+        <TaskModal
+          task={editingTask}
+          onClose={() => setEditingTask(null)}
         />
       )}
     </div>

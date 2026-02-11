@@ -340,6 +340,9 @@ export default function Board({ triggerNewTask }) {
     } else if (isSameColumn) {
       // Dropped on empty space in same column - do nothing
       return;
+    } else {
+      // Dropped on empty space in different column - place at top
+      position = 0;
     }
 
     // Move all dragged tasks (multi-select drag)

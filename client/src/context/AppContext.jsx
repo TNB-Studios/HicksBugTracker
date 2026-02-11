@@ -368,6 +368,18 @@ export function AppProvider({ children, user }) {
     }
   };
 
+  const editComment = async (taskId, commentId, text) => {
+    try {
+      const response = await taskApi.editComment(taskId, commentId, { text });
+      const updatedTask = response.data.data;
+      setTasks(prev => prev.map(t => t._id === taskId ? updatedTask : t));
+      return updatedTask;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
   // File operations
   const attachFilesToTask = async (taskId, files) => {
     try {
@@ -736,6 +748,7 @@ export function AppProvider({ children, user }) {
     deleteTask,
     addComment,
     deleteComment,
+    editComment,
     getFilteredTasks,
 
     // File operations

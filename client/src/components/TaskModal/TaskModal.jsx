@@ -24,6 +24,7 @@ export default function TaskModal({ task: taskProp, onClose }) {
     deleteTask,
     addComment,
     deleteComment,
+    editComment,
     attachFilesToTask,
     removeFileFromTask,
     attachFilesToComment,
@@ -31,6 +32,7 @@ export default function TaskModal({ task: taskProp, onClose }) {
     user
   } = useApp();
   const canDeleteTasks = user?.permissions?.canDeleteTasks || false;
+  const isAdmin = user?.isAdmin || false;
 
   // Get live task from context (updates when files/comments change)
   const task = taskProp ? tasks.find(t => t._id === taskProp._id) || taskProp : null;
@@ -74,7 +76,10 @@ export default function TaskModal({ task: taskProp, onClose }) {
   }, [formData, task]);
 
   const [newComment, setNewComment] = useState('');
-  const [commentAuthor, setCommentAuthor] = useState('');
+  const [pendingFiles, setPendingFiles] = useState([]); // Files for new task before creation
+  const [pendingCommentFiles, setPendingCommentFiles] = useState([]); // Files for new comment before creation
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingCommentText, setEditingCommentText] = useState('');
 
   useEffect(() => {
     if (task) {
@@ -146,8 +151,15 @@ export default function TaskModal({ task: taskProp, onClose }) {
         }
       } else {
         console.time('API createTask (Modal)');
-        await createTask(dataToSave);
+        const newTask = await createTask(dataToSave);
         console.timeEnd('API createTask (Modal)');
+
+        // Attach any pending files to the newly created task
+        if (pendingFiles.length > 0) {
+          console.time('API attachFilesToTask (Modal)');
+          await attachFilesToTask(newTask._id, pendingFiles);
+          console.timeEnd('API attachFilesToTask (Modal)');
+        }
       }
       onClose();
     } catch (err) {
@@ -172,9 +184,17 @@ export default function TaskModal({ task: taskProp, onClose }) {
     if (!newComment.trim()) return;
 
     try {
-      await addComment(task._id, newComment.trim(), commentAuthor.trim() || 'Anonymous');
+      const updatedTask = await addComment(task._id, newComment.trim(), user?.name || user?.email || 'Anonymous');
+
+      // If there are pending files, attach them to the newly created comment
+      if (pendingCommentFiles.length > 0 && updatedTask.comments?.length > 0) {
+        // The new comment is the last one in the array
+        const newCommentObj = updatedTask.comments[updatedTask.comments.length - 1];
+        await attachFilesToComment(task._id, newCommentObj._id, pendingCommentFiles);
+        setPendingCommentFiles([]);
+      }
+
       setNewComment('');
-      setCommentAuthor('');
     } catch (err) {
       alert('Error adding comment: ' + err.message);
     }
@@ -186,6 +206,34 @@ export default function TaskModal({ task: taskProp, onClose }) {
     } catch (err) {
       alert('Error deleting comment: ' + err.message);
     }
+  };
+
+  const handleStartEditComment = (comment) => {
+    setEditingCommentId(comment._id);
+    setEditingCommentText(comment.text);
+  };
+
+  const handleCancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditingCommentText('');
+  };
+
+  const handleSaveEditComment = async () => {
+    if (!editingCommentText.trim()) return;
+    try {
+      await editComment(task._id, editingCommentId, editingCommentText.trim());
+      setEditingCommentId(null);
+      setEditingCommentText('');
+    } catch (err) {
+      alert('Error editing comment: ' + err.message);
+    }
+  };
+
+  // Check if user can edit/delete a comment
+  const canModifyComment = (comment) => {
+    if (isAdmin) return true;
+    const userName = user?.name || user?.email;
+    return comment.author === userName;
   };
 
   const formatDate = (dateString) => {
@@ -265,6 +313,31 @@ export default function TaskModal({ task: taskProp, onClose }) {
               placeholder="Enter description..."
             />
           </div>
+
+          {currentBoard && (
+            <div className="form-group">
+              <label>Attachments</label>
+              <FileUpload
+                boardId={currentBoard._id}
+                files={task ? (task.files || []) : pendingFiles}
+                onUploadComplete={task ? handleTaskFilesUploaded : (uploadedFiles) => {
+                  setPendingFiles(prev => [...prev, ...uploadedFiles]);
+                }}
+                onFilesChange={(newFiles) => {
+                  if (task) {
+                    // Find removed files and delete them
+                    const currentFileIds = (task.files || []).map(f => f.fileId);
+                    const newFileIds = newFiles.map(f => f.fileId);
+                    const removedFileIds = currentFileIds.filter(id => !newFileIds.includes(id));
+                    removedFileIds.forEach(fileId => handleTaskFileRemove(fileId));
+                  } else {
+                    // For new tasks, just update the pending files list
+                    setPendingFiles(newFiles);
+                  }
+                }}
+              />
+            </div>
+          )}
 
           <div className="form-row">
             <div className="form-group">
@@ -374,44 +447,94 @@ export default function TaskModal({ task: taskProp, onClose }) {
             </div>
           )}
 
-          {task && currentBoard && (
-            <div className="form-group">
-              <label>Attachments</label>
-              <FileUpload
-                boardId={currentBoard._id}
-                files={task.files || []}
-                onUploadComplete={handleTaskFilesUploaded}
-                onFilesChange={(newFiles) => {
-                  // Find removed files and delete them
-                  const currentFileIds = (task.files || []).map(f => f.fileId);
-                  const newFileIds = newFiles.map(f => f.fileId);
-                  const removedFileIds = currentFileIds.filter(id => !newFileIds.includes(id));
-                  removedFileIds.forEach(fileId => handleTaskFileRemove(fileId));
-                }}
-              />
-            </div>
-          )}
-
         </form>
 
         {task && (
           <div className="comments-section">
             <h3>Comments ({task.comments?.length || 0})</h3>
 
+            <div className="add-comment">
+              <RichTextEditor
+                value={newComment}
+                onChange={setNewComment}
+                placeholder="Add a comment..."
+              />
+              {currentBoard && (
+                <FileUpload
+                  boardId={currentBoard._id}
+                  files={pendingCommentFiles}
+                  onUploadComplete={(uploadedFiles) => {
+                    setPendingCommentFiles(prev => [...prev, ...uploadedFiles]);
+                  }}
+                  onFilesChange={(newFiles) => {
+                    setPendingCommentFiles(newFiles);
+                  }}
+                />
+              )}
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleAddComment}
+              >
+                Add Comment
+              </button>
+            </div>
+
             <div className="comments-list">
-              {task.comments?.map(comment => (
+              {task.comments?.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(comment => (
                 <div key={comment._id} className="comment">
                   <div className="comment-header">
                     <strong>{comment.author}</strong>
+                    {boardUsers.find(u => u.name === comment.author)?.email && (
+                      <span className="comment-email">({boardUsers.find(u => u.name === comment.author).email})</span>
+                    )}
                     <span className="comment-date">{formatDate(comment.createdAt)}</span>
-                    <button
-                      className="comment-delete"
-                      onClick={() => handleDeleteComment(comment._id)}
-                    >
-                      &times;
-                    </button>
+                    {canModifyComment(comment) && editingCommentId !== comment._id && (
+                      <button
+                        className="comment-edit"
+                        onClick={() => handleStartEditComment(comment)}
+                        title="Edit comment"
+                      >
+                        &#9998;
+                      </button>
+                    )}
+                    {canModifyComment(comment) && (
+                      <button
+                        className="comment-delete"
+                        onClick={() => handleDeleteComment(comment._id)}
+                        title="Delete comment"
+                      >
+                        &times;
+                      </button>
+                    )}
                   </div>
-                  <RichTextDisplay content={comment.text} />
+                  {editingCommentId === comment._id ? (
+                    <div className="comment-edit-area">
+                      <RichTextEditor
+                        value={editingCommentText}
+                        onChange={setEditingCommentText}
+                        placeholder="Edit comment..."
+                      />
+                      <div className="comment-edit-buttons">
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          onClick={handleSaveEditComment}
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={handleCancelEditComment}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <RichTextDisplay content={comment.text} />
+                  )}
                   {currentBoard && (
                     <FileUpload
                       boardId={currentBoard._id}
@@ -423,40 +546,28 @@ export default function TaskModal({ task: taskProp, onClose }) {
                         const removedFileIds = currentFileIds.filter(id => !newFileIds.includes(id));
                         removedFileIds.forEach(fileId => handleCommentFileRemove(comment._id, fileId));
                       }}
+                      disabled={!canModifyComment(comment)}
                     />
                   )}
                 </div>
               ))}
             </div>
-
-            <div className="add-comment">
-              <input
-                type="text"
-                placeholder="Your name (optional)"
-                value={commentAuthor}
-                onChange={(e) => setCommentAuthor(e.target.value)}
-              />
-              <RichTextEditor
-                value={newComment}
-                onChange={setNewComment}
-                placeholder="Add a comment..."
-              />
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={handleAddComment}
-              >
-                Add Comment
-              </button>
-            </div>
           </div>
         )}
 
-        {task && canDeleteTasks && (
-          <div className="modal-footer-centered">
-            <button type="button" className="btn btn-danger" onClick={handleDelete}>
-              Delete Task
-            </button>
+        {task && (canDeleteTasks || isDirty) && (
+          <div className="modal-footer">
+            {canDeleteTasks && (
+              <button type="button" className="btn btn-danger" onClick={handleDelete}>
+                Delete Task
+              </button>
+            )}
+            <div className="modal-footer-spacer"></div>
+            {isDirty && (
+              <button type="button" className="btn btn-primary" onClick={handleSubmit}>
+                Save Changes
+              </button>
+            )}
           </div>
         )}
       </div>

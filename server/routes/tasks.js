@@ -352,4 +352,31 @@ router.delete('/tasks/:id/comments/:commentId', async (req, res, next) => {
   }
 });
 
+// @route   PUT /api/tasks/:id/comments/:commentId
+// @desc    Edit a comment on a task
+router.put('/tasks/:id/comments/:commentId', async (req, res, next) => {
+  try {
+    const { text } = req.body;
+
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ success: false, error: 'Task not found' });
+    }
+
+    const comment = task.comments.find(
+      c => c._id.toString() === req.params.commentId
+    );
+    if (!comment) {
+      return res.status(404).json({ success: false, error: 'Comment not found' });
+    }
+
+    comment.text = text;
+    await task.save();
+
+    res.json({ success: true, data: task });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
