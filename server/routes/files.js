@@ -6,6 +6,7 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const checkDiskSpace = require('check-disk-space').default;
 const Task = require('../models/Task');
+const broadcast = require('../services/broadcast');
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB for regular files
 const MAX_VIDEO_FILE_SIZE = 250 * 1024 * 1024; // 250MB for video files
@@ -198,6 +199,11 @@ router.post('/tasks/:taskId/files', async (req, res, next) => {
     })));
 
     await task.save();
+
+    // Broadcast file added to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(task.boardId.toString(), 'task_updated', { task }, userEmail);
+
     res.json({ success: true, data: task });
   } catch (error) {
     next(error);
@@ -233,6 +239,10 @@ router.delete('/tasks/:taskId/files/:fileId', async (req, res, next) => {
     if (physicalFile) {
       fs.unlinkSync(path.join(boardDir, physicalFile));
     }
+
+    // Broadcast file removed to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(boardId, 'task_updated', { task }, userEmail);
 
     res.json({ success: true, data: task });
   } catch (error) {
@@ -273,6 +283,11 @@ router.post('/tasks/:taskId/comments/:commentId/files', async (req, res, next) =
     })));
 
     await task.save();
+
+    // Broadcast comment file added to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(task.boardId.toString(), 'task_updated', { task }, userEmail);
+
     res.json({ success: true, data: task });
   } catch (error) {
     next(error);
@@ -311,6 +326,10 @@ router.delete('/tasks/:taskId/comments/:commentId/files/:fileId', async (req, re
     if (physicalFile) {
       fs.unlinkSync(path.join(boardDir, physicalFile));
     }
+
+    // Broadcast comment file removed to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(boardId, 'task_updated', { task }, userEmail);
 
     res.json({ success: true, data: task });
   } catch (error) {

@@ -6,6 +6,7 @@ require('dotenv').config();
 
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
+const broadcast = require('./services/broadcast');
 
 // Route files
 const boardRoutes = require('./routes/boards');
@@ -154,6 +155,40 @@ const requireAdmin = (req, res, next) => {
 // Health check endpoint (public) - must be before protected routes
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Server-Sent Events endpoint for real-time updates
+app.get('/api/events', requireApiAuth, (req, res) => {
+  const boardId = req.query.boardId;
+
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+
+  // Store user info on the response for filtering
+  res.userId = req.oidc.user.email;
+
+  // Send initial connection confirmation
+  res.write(`data: ${JSON.stringify({ type: 'connected', boardId })}\n\n`);
+
+  // Add client to broadcast service
+  broadcast.addClient(res, boardId);
+
+  // Send heartbeat every 30 seconds to keep connection alive
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(`data: ${JSON.stringify({ type: 'heartbeat' })}\n\n`);
+    } catch (err) {
+      clearInterval(heartbeat);
+    }
+  }, 30000);
+
+  // Clean up on close
+  req.on('close', () => {
+    clearInterval(heartbeat);
+  });
 });
 
 // API routes (protected)

@@ -3,6 +3,7 @@ const router = express.Router();
 const Column = require('../models/Column');
 const Board = require('../models/Board');
 const Task = require('../models/Task');
+const broadcast = require('../services/broadcast');
 
 // Default columns that should always exist
 const DEFAULT_COLUMNS = ['Backlog', 'Next Up', 'Working On', 'Completed', 'In Testing', 'Passed'];
@@ -90,6 +91,10 @@ router.post('/boards/:boardId/columns', async (req, res, next) => {
     board.columnOrder.push(column._id);
     await board.save();
 
+    // Broadcast column creation to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(board._id.toString(), 'column_created', { column, columnOrder: board.columnOrder }, userEmail);
+
     res.status(201).json({ success: true, data: column });
   } catch (error) {
     next(error);
@@ -115,6 +120,10 @@ router.put('/columns/:id', async (req, res, next) => {
     if (!column) {
       return res.status(404).json({ success: false, error: 'Column not found' });
     }
+
+    // Broadcast column update to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(column.boardId.toString(), 'column_updated', { column }, userEmail);
 
     res.json({ success: true, data: column });
   } catch (error) {
@@ -162,8 +171,16 @@ router.delete('/columns/:id', async (req, res, next) => {
       $pull: { columnOrder: column._id }
     });
 
+    // Store boardId before deleting
+    const boardId = column.boardId.toString();
+    const columnId = column._id.toString();
+
     // Delete the column
     await column.deleteOne();
+
+    // Broadcast column deletion to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(boardId, 'column_deleted', { columnId, movedTasksToBacklog: backlogColumn ? true : false }, userEmail);
 
     res.json({ success: true, data: {} });
   } catch (error) {
@@ -186,6 +203,10 @@ router.put('/boards/:boardId/columns/reorder', async (req, res, next) => {
     if (!board) {
       return res.status(404).json({ success: false, error: 'Board not found' });
     }
+
+    // Broadcast column reorder to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(req.params.boardId, 'columns_reordered', { columnOrder }, userEmail);
 
     res.json({ success: true, data: board });
   } catch (error) {

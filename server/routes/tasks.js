@@ -6,6 +6,7 @@ const Task = require('../models/Task');
 const Column = require('../models/Column');
 const Board = require('../models/Board');
 const { processEmailRules } = require('../services/emailService');
+const broadcast = require('../services/broadcast');
 
 const UPLOAD_DIR = path.join(__dirname, '..', 'Uploaded_Images');
 
@@ -117,6 +118,10 @@ router.post('/tasks', async (req, res, next) => {
     column.taskIds.push(task._id);
     await column.save();
 
+    // Broadcast task creation to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(boardId, 'task_created', { task, column }, userEmail);
+
     res.status(201).json({ success: true, data: task });
   } catch (error) {
     next(error);
@@ -169,6 +174,11 @@ router.put('/tasks/:id', async (req, res, next) => {
     }
 
     console.log(`Total PUT /tasks/${req.params.id}: ${Date.now() - startTime}ms`);
+
+    // Broadcast task update to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(task.boardId.toString(), 'task_updated', { task }, userEmail);
+
     res.json({ success: true, data: task });
   } catch (error) {
     next(error);
@@ -229,6 +239,14 @@ router.put('/tasks/:id/move', async (req, res, next) => {
       }, board).catch(err => console.error('Email rule error:', err));
     }
 
+    // Broadcast task move to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(task.boardId.toString(), 'task_moved', {
+      task,
+      oldColumnId: oldColumnId.toString(),
+      newColumnId: columnId.toString()
+    }, userEmail);
+
     res.json({ success: true, data: task });
   } catch (error) {
     next(error);
@@ -284,8 +302,16 @@ router.delete('/tasks/:id', async (req, res, next) => {
       });
     }
 
+    // Store boardId before deleting
+    const boardId = task.boardId.toString();
+    const taskId = task._id.toString();
+
     // Delete the task
     await task.deleteOne();
+
+    // Broadcast task deletion to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(boardId, 'task_deleted', { taskId }, userEmail);
 
     res.json({ success: true, data: {} });
   } catch (error) {
@@ -313,6 +339,10 @@ router.post('/tasks/:id/comments', async (req, res, next) => {
       commentText: text,
       commentAuthor: author
     }, board).catch(err => console.error('Email rule error:', err));
+
+    // Broadcast comment added to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(task.boardId.toString(), 'task_updated', { task }, userEmail);
 
     res.status(201).json({ success: true, data: task });
   } catch (error) {
@@ -346,6 +376,10 @@ router.delete('/tasks/:id/comments/:commentId', async (req, res, next) => {
     );
     await task.save();
 
+    // Broadcast comment deleted to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(task.boardId.toString(), 'task_updated', { task }, userEmail);
+
     res.json({ success: true, data: task });
   } catch (error) {
     next(error);
@@ -372,6 +406,10 @@ router.put('/tasks/:id/comments/:commentId', async (req, res, next) => {
 
     comment.text = text;
     await task.save();
+
+    // Broadcast comment edited to other users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastToBoard(task.boardId.toString(), 'task_updated', { task }, userEmail);
 
     res.json({ success: true, data: task });
   } catch (error) {

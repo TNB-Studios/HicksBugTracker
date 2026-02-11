@@ -120,6 +120,171 @@ export function AppProvider({ children, user }) {
     }
   }, [currentBoardId, fetchBoard, fetchBoardUsers, fetchUserColumnOrders]);
 
+  // Server-Sent Events for real-time updates
+  useEffect(() => {
+    if (!currentBoardId) return;
+
+    const apiBase = import.meta.env.VITE_API_URL || '/api';
+    const eventSource = new EventSource(`${apiBase}/events?boardId=${currentBoardId}`);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+
+        switch (data.type) {
+          case 'connected':
+          case 'heartbeat':
+            // Ignore connection and heartbeat events
+            break;
+
+          case 'task_created': {
+            const { task, column } = data.data;
+            setTasks(prev => {
+              // Don't add if already exists
+              if (prev.some(t => t._id === task._id)) return prev;
+              return [task, ...prev];
+            });
+            if (column) {
+              setColumns(prev => prev.map(c =>
+                c._id === column._id ? column : c
+              ));
+            }
+            break;
+          }
+
+          case 'task_updated': {
+            const { task } = data.data;
+            setTasks(prev => prev.map(t => t._id === task._id ? task : t));
+            break;
+          }
+
+          case 'task_moved': {
+            const { task, oldColumnId, newColumnId } = data.data;
+            setTasks(prev => prev.map(t => t._id === task._id ? task : t));
+            // Update columns' taskIds
+            setColumns(prev => prev.map(col => {
+              if (col._id === oldColumnId) {
+                return { ...col, taskIds: col.taskIds.filter(id => String(id) !== String(task._id)) };
+              }
+              if (col._id === newColumnId) {
+                // Add to end if not already present
+                if (!col.taskIds.some(id => String(id) === String(task._id))) {
+                  return { ...col, taskIds: [...col.taskIds, task._id] };
+                }
+              }
+              return col;
+            }));
+            break;
+          }
+
+          case 'task_deleted': {
+            const { taskId } = data.data;
+            setTasks(prev => prev.filter(t => t._id !== taskId));
+            // Remove from columns
+            setColumns(prev => prev.map(col => ({
+              ...col,
+              taskIds: col.taskIds.filter(id => String(id) !== String(taskId))
+            })));
+            break;
+          }
+
+          case 'column_created': {
+            const { column, columnOrder } = data.data;
+            setColumns(prev => {
+              // Don't add if already exists
+              if (prev.some(c => c._id === column._id)) return prev;
+              // Add in correct order
+              if (columnOrder) {
+                const orderedColumns = columnOrder.map(colId =>
+                  colId === column._id ? column : prev.find(c => c._id === colId)
+                ).filter(Boolean);
+                return orderedColumns;
+              }
+              return [...prev, column];
+            });
+            break;
+          }
+
+          case 'column_updated': {
+            const { column } = data.data;
+            setColumns(prev => prev.map(c => c._id === column._id ? column : c));
+            break;
+          }
+
+          case 'column_deleted': {
+            const { columnId, movedTasksToBacklog } = data.data;
+            setColumns(prev => prev.filter(c => c._id !== columnId));
+            // If tasks were moved, refresh them
+            if (movedTasksToBacklog && currentBoardId) {
+              taskApi.getAll(currentBoardId).then(res => {
+                setTasks(res.data.data);
+              }).catch(err => console.error('Error refreshing tasks:', err));
+            }
+            break;
+          }
+
+          case 'columns_reordered': {
+            const { columnOrder } = data.data;
+            setColumns(prev => {
+              const reordered = columnOrder.map(colId =>
+                prev.find(c => c._id === colId)
+              ).filter(Boolean);
+              return reordered;
+            });
+            break;
+          }
+
+          case 'board_created': {
+            const { board } = data.data;
+            setBoards(prev => {
+              // Don't add if already exists
+              if (prev.some(b => b._id === board._id)) return prev;
+              return [board, ...prev];
+            });
+            break;
+          }
+
+          case 'board_updated': {
+            const { board } = data.data;
+            setBoards(prev => prev.map(b => b._id === board._id ? board : b));
+            // Update currentBoard if it's the same
+            setCurrentBoard(prev => prev?._id === board._id ? board : prev);
+            break;
+          }
+
+          case 'board_deleted': {
+            const { boardId } = data.data;
+            setBoards(prev => {
+              const updated = prev.filter(b => b._id !== boardId);
+              // If current board was deleted, switch to first remaining board
+              if (currentBoardId === boardId && updated.length > 0) {
+                setCurrentBoard(updated[0]);
+              } else if (currentBoardId === boardId) {
+                setCurrentBoard(null);
+              }
+              return updated;
+            });
+            break;
+          }
+
+          default:
+            console.log('Unknown SSE event type:', data.type);
+        }
+      } catch (err) {
+        console.error('Error parsing SSE message:', err);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error('SSE connection error:', err);
+      // EventSource will auto-reconnect
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [currentBoardId]);
+
   // Board operations
   const createBoard = async (name, description) => {
     try {

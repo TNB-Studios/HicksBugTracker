@@ -3,6 +3,7 @@ const router = express.Router();
 const Board = require('../models/Board');
 const Column = require('../models/Column');
 const Task = require('../models/Task');
+const broadcast = require('../services/broadcast');
 
 // Helper to make Authentik API requests
 async function authentikFetch(endpoint, options = {}) {
@@ -143,6 +144,10 @@ router.post('/', async (req, res, next) => {
     board.columnOrder = columns.map(col => col._id);
     await board.save();
 
+    // Broadcast board creation to all users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastGlobal('board_created', { board }, userEmail);
+
     res.status(201).json({
       success: true,
       data: { board, columns }
@@ -172,6 +177,10 @@ router.put('/:id', async (req, res, next) => {
     if (!board) {
       return res.status(404).json({ success: false, error: 'Board not found' });
     }
+
+    // Broadcast board update to all users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastGlobal('board_updated', { board }, userEmail);
 
     res.json({ success: true, data: board });
   } catch (error) {
@@ -216,8 +225,15 @@ router.delete('/:id', async (req, res, next) => {
     // Delete all columns for this board
     await Column.deleteMany({ boardId: board._id });
 
+    // Store board ID before deleting
+    const boardId = board._id.toString();
+
     // Delete the board
     await board.deleteOne();
+
+    // Broadcast board deletion to all users
+    const userEmail = req.oidc?.user?.email;
+    broadcast.broadcastGlobal('board_deleted', { boardId }, userEmail);
 
     res.json({ success: true, data: {} });
   } catch (error) {
