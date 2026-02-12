@@ -23,12 +23,14 @@ export function AppProvider({ children, user }) {
   const [customFields, setCustomFields] = useState([]);
 
   // Filters
+  // customFieldFilters: { [fieldId]: { values: ['value1', 'value2', ...] } }
   const [filters, setFilters] = useState({
     state: [],
     taskType: [],
     assignedTo: '',
     search: '',
-    tags: []
+    tags: [],
+    customFieldFilters: {}
   });
 
   // Fetch all boards (filtered by user permissions)
@@ -910,12 +912,47 @@ export function AppProvider({ children, user }) {
         }
       }
 
+      // Custom field filters
+      const customFieldFilterEntries = Object.entries(filters.customFieldFilters || {});
+      for (const [fieldId, filterConfig] of customFieldFilterEntries) {
+        const filterValues = filterConfig.values || [];
+        if (filterValues.length === 0) continue; // No values selected, skip this filter
+
+        // Find the custom field definition to check appliesTo and get default value
+        const fieldDef = customFields.find(f => f._id === fieldId);
+        if (!fieldDef) continue; // Field definition not found, skip
+
+        // Check if this field applies to the task's type
+        const taskType = task.taskType || 'Task';
+        if (!fieldDef.appliesTo.includes(taskType)) {
+          // Field doesn't apply to this task type, skip this filter for this task
+          continue;
+        }
+
+        // Get the task's value for this field
+        let taskValue = task.customFields?.[fieldId] || '';
+
+        // If no value set and field is not user-created, use the default (first option)
+        if (!taskValue && !fieldDef.allowUserCreatedOptions && fieldDef.options?.length > 0) {
+          const sortedOptions = [...fieldDef.options].sort((a, b) => a.order - b.order);
+          taskValue = sortedOptions[0]?.value || '';
+        }
+
+        // Check if task's value matches any of the filter values
+        const matches = filterValues.some(fv =>
+          taskValue.toLowerCase() === fv.toLowerCase()
+        );
+        if (!matches) {
+          return false;
+        }
+      }
+
       return true;
     });
 
     // Sort by dependency order
     return sortTasksByDependency(filtered);
-  }, [tasks, filters, sortTasksByDependency]);
+  }, [tasks, filters, customFields, sortTasksByDependency]);
 
   const value = {
     // State
