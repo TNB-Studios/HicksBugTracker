@@ -2,16 +2,25 @@
 
 A modern, self-hosted bug tracking and task management application built with React and Node.js.
 
+Features - 
+
+
 ## Features
 
-- Kanban-style board view and list view
-- Drag-and-drop task management
-- Task dependencies
-- File attachments (images, videos, audio, documents)
-- Email notifications with configurable rules (Gmail, Outlook, Yahoo, or Google Workspace)
+- Create multiple boards for different projects.
+- Create tasks/bugs/suggestions as job types within specific boards. See them in a Trello/Kaban like environment, where columns of tasks are defined as states.
+- By dragging a job from one column to another, users change it's state. It is possible to select multiple jobs and drag and drop them, or copy them - even between boards.
+- Users can filter jobs by a filtering ribbon, so only see the ones you want.
+- Re-arrange jobs by user inside of columns, or auto sort them based on internal parameters.
+- View jobs either as a column based system, or as a more traditional list based view.
+- Tasks can have dependencies.
+- Users can create their own parameters on jobs and allow users to put in whatever text they want, or build pre-defined states. Users can filter job views based on those user added parameters.
+- Users can set up email filters, so emails are auto generated based on user defined rules (changing state, comments made, changing assignee etc) - the system allows for configurable email providers (Gmail, Outlook, Yahoo, or Google Workspace)
+- The system handles multiple users, so if one user is logged in and changes a task state or comments etc, everyone is updated immediately.
+- Jobs can have video/audio/images attached to them, and there is preview within the board itself.
+- Comments can be added - and have video/audio/images attached.
 - User authentication via Authentik (OIDC)
-- Role-based permissions
-- Multiple boards support
+- Role-based permissions - admins can allow other users to have access to specific boards, be able to delete jobs, create email rules or user created parameters.
 
 ## Prerequisites
 
