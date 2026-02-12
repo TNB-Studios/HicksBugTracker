@@ -107,6 +107,11 @@ const taskSchema = new mongoose.Schema(
       type: [fileSchema],
       default: [],
       validate: [arr => arr.length <= 4, 'Maximum 4 files per task']
+    },
+    customFields: {
+      type: Map,
+      of: String,
+      default: new Map()
     }
   },
   {

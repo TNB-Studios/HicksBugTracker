@@ -80,6 +80,14 @@ export const userColumnOrderApi = {
   save: (boardId, columnId, taskIds) => api.put(`/user-column-orders/${boardId}/${columnId}`, { taskIds })
 };
 
+// Custom Field API
+export const customFieldApi = {
+  getAll: (boardId) => api.get(`/boards/${boardId}/custom-fields`),
+  create: (boardId, data) => api.post(`/boards/${boardId}/custom-fields`, data),
+  update: (boardId, id, data) => api.put(`/boards/${boardId}/custom-fields/${id}`, data),
+  delete: (boardId, id) => api.delete(`/boards/${boardId}/custom-fields/${id}`)
+};
+
 // File API
 export const fileApi = {
   // Upload files to a board (returns file metadata)

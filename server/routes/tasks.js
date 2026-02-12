@@ -72,7 +72,7 @@ router.get('/tasks/:id', async (req, res, next) => {
 // @desc    Create a new task
 router.post('/tasks', async (req, res, next) => {
   try {
-    const { name, description, boardId, columnId, state, assignedTo, reportedBy, priority, taskType, dependsOn, tags } = req.body;
+    const { name, description, boardId, columnId, state, assignedTo, reportedBy, priority, taskType, dependsOn, tags, customFields } = req.body;
 
     // Verify column exists
     const column = await Column.findById(columnId);
@@ -111,7 +111,8 @@ router.post('/tasks', async (req, res, next) => {
       priority,
       taskType: taskType || 'Task',
       dependsOn: dependsOn || null,
-      tags: tags || []
+      tags: tags || [],
+      customFields: customFields || new Map()
     });
 
     // Add task to column's taskIds
@@ -133,7 +134,7 @@ router.post('/tasks', async (req, res, next) => {
 router.put('/tasks/:id', async (req, res, next) => {
   const startTime = Date.now();
   try {
-    const { name, description, state, assignedTo, reportedBy, priority, taskType, dependsOn, tags } = req.body;
+    const { name, description, state, assignedTo, reportedBy, priority, taskType, dependsOn, tags, customFields } = req.body;
 
     // Get current task to detect changes
     console.time('findById');
@@ -155,6 +156,7 @@ router.put('/tasks/:id', async (req, res, next) => {
     if (taskType !== undefined) updateData.taskType = taskType;
     if (dependsOn !== undefined) updateData.dependsOn = dependsOn || null;
     if (tags !== undefined) updateData.tags = tags;
+    if (customFields !== undefined) updateData.customFields = customFields;
 
     console.time('findByIdAndUpdate');
     const task = await Task.findByIdAndUpdate(

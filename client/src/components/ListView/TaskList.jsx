@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import './ListView.css';
 
 const priorityColors = {
   Low: '#4caf50',
@@ -17,12 +18,19 @@ const typeColors = {
 };
 
 export default function TaskList({ selectedTaskIds = [], onTaskClick, onTaskDoubleClick }) {
-  const { tasks, getFilteredTasks, columns } = useApp();
+  const { tasks, getFilteredTasks, columns, customFields } = useApp();
   const [expandedTasks, setExpandedTasks] = useState(new Set());
   const [sortColumn, setSortColumn] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
 
   const filteredTasks = getFilteredTasks();
+
+  // Get custom fields that should show in list view
+  const listCustomFields = useMemo(() => {
+    return (customFields || [])
+      .filter(field => field.showInList)
+      .sort((a, b) => a.order - b.order);
+  }, [customFields]);
 
   const getColumnName = (columnId) => {
     const col = columns.find(c => String(c._id) === String(columnId));
@@ -60,7 +68,14 @@ export default function TaskList({ selectedTaskIds = [], onTaskClick, onTaskDoub
           bVal = (b.assignedTo || '').toLowerCase();
           break;
         default:
-          return 0;
+          // Check if it's a custom field
+          if (sortColumn.startsWith('cf_')) {
+            const fieldId = sortColumn.replace('cf_', '');
+            aVal = ((a.customFields || {})[fieldId] || '').toLowerCase();
+            bVal = ((b.customFields || {})[fieldId] || '').toLowerCase();
+          } else {
+            return 0;
+          }
       }
 
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
@@ -175,6 +190,17 @@ export default function TaskList({ selectedTaskIds = [], onTaskClick, onTaskDoub
           </span>
 
           <span className="task-list-assigned">{task.assignedTo || ''}</span>
+
+          {listCustomFields.map(field => {
+            const taskCustomFields = task.customFields || {};
+            const appliesTo = field.appliesTo.includes(task.taskType || 'Task');
+            const value = appliesTo ? (taskCustomFields[field._id] || '-') : '-';
+            return (
+              <span key={field._id} className="task-list-custom-field">
+                {value}
+              </span>
+            );
+          })}
         </div>
 
         {hasChildren && isExpanded && (
@@ -213,6 +239,15 @@ export default function TaskList({ selectedTaskIds = [], onTaskClick, onTaskDoub
         <span className="task-list-header-assigned sortable" onClick={() => handleSort('assigned')}>
           Assigned{getSortIndicator('assigned')}
         </span>
+        {listCustomFields.map(field => (
+          <span
+            key={field._id}
+            className="task-list-header-custom-field sortable"
+            onClick={() => handleSort(`cf_${field._id}`)}
+          >
+            {field.name}{getSortIndicator(`cf_${field._id}`)}
+          </span>
+        ))}
       </div>
       <div className="task-list-body">
         {rootTasks.map(task => renderTask(task, 0))}

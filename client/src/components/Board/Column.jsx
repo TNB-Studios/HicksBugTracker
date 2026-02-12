@@ -5,7 +5,7 @@ import ColumnSortMenu from './ColumnSortMenu';
 import { useApp } from '../../context/AppContext';
 import { useState } from 'react';
 
-export default function Column({ column, tasks, onTaskClick, onTaskDoubleClick, allTasks, dragHandleListeners, selectedTaskIds = [], registerTaskRef }) {
+export default function Column({ column, tasks, onTaskClick, onTaskDoubleClick, allTasks, dragHandleListeners, selectedTaskIds = [], registerTaskRef, customFields = [] }) {
   const { deleteColumn, updateColumn } = useApp();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(column.name);
@@ -96,6 +96,7 @@ export default function Column({ column, tasks, onTaskClick, onTaskDoubleClick, 
               allTasks={allTasks}
               isSelected={selectedTaskIds.includes(String(task._id))}
               registerTaskRef={registerTaskRef}
+              customFields={customFields}
             />
           ))}
         </div>

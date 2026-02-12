@@ -43,7 +43,8 @@ export default function Board({ triggerNewTask }) {
     clearSelection,
     selectMultipleTasks,
     userTaskOrder,
-    setUserColumnOrder
+    setUserColumnOrder,
+    customFields
   } = useApp();
 
   const [activeTask, setActiveTask] = useState(null);
@@ -669,6 +670,7 @@ export default function Board({ triggerNewTask }) {
                 allTasks={tasks}
                 selectedTaskIds={selectedTaskIds}
                 registerTaskRef={registerTaskRef}
+                customFields={customFields}
               />
             ))}
 

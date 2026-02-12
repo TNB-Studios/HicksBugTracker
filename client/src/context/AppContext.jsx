@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { boardApi, columnApi, taskApi, fileApi, userColumnOrderApi } from '../services/api';
+import { boardApi, columnApi, taskApi, fileApi, userColumnOrderApi, customFieldApi } from '../services/api';
 
 const AppContext = createContext();
 
@@ -18,6 +18,9 @@ export function AppProvider({ children, user }) {
 
   // User-specific task order per column: { [columnId]: [taskId, ...] }
   const [userTaskOrder, setUserTaskOrder] = useState({});
+
+  // Custom fields for the current board
+  const [customFields, setCustomFields] = useState([]);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -97,6 +100,21 @@ export function AppProvider({ children, user }) {
     }
   }, []);
 
+  // Fetch custom fields for a board
+  const fetchCustomFields = useCallback(async (boardId) => {
+    if (!boardId) return [];
+    try {
+      const response = await customFieldApi.getAll(boardId);
+      const fields = response.data.data || [];
+      setCustomFields(fields);
+      return fields;
+    } catch (err) {
+      console.error('Error fetching custom fields:', err.message);
+      setCustomFields([]);
+      return [];
+    }
+  }, []);
+
   // Load boards on mount
   useEffect(() => {
     const init = async () => {
@@ -117,8 +135,9 @@ export function AppProvider({ children, user }) {
       fetchBoard(currentBoardId);
       fetchBoardUsers(currentBoardId);
       fetchUserColumnOrders(currentBoardId);
+      fetchCustomFields(currentBoardId);
     }
-  }, [currentBoardId, fetchBoard, fetchBoardUsers, fetchUserColumnOrders]);
+  }, [currentBoardId, fetchBoard, fetchBoardUsers, fetchUserColumnOrders, fetchCustomFields]);
 
   // Server-Sent Events for real-time updates
   useEffect(() => {
@@ -264,6 +283,31 @@ export function AppProvider({ children, user }) {
               }
               return updated;
             });
+            break;
+          }
+
+          case 'custom_field_created': {
+            const { customField } = data.data;
+            setCustomFields(prev => {
+              // Don't add if already exists
+              if (prev.some(f => f._id === customField._id)) return prev;
+              return [...prev, customField].sort((a, b) => a.order - b.order);
+            });
+            break;
+          }
+
+          case 'custom_field_updated': {
+            const { customField } = data.data;
+            setCustomFields(prev =>
+              prev.map(f => f._id === customField._id ? customField : f)
+                .sort((a, b) => a.order - b.order)
+            );
+            break;
+          }
+
+          case 'custom_field_deleted': {
+            const { customFieldId } = data.data;
+            setCustomFields(prev => prev.filter(f => f._id !== customFieldId));
             break;
           }
 
@@ -887,6 +931,7 @@ export function AppProvider({ children, user }) {
     clipboard,
     selectedTaskIds,
     userTaskOrder,
+    customFields,
 
     // Setters
     setCurrentBoard,
@@ -936,7 +981,10 @@ export function AppProvider({ children, user }) {
 
     // User column order operations
     setUserColumnOrder,
-    sortColumnTasks
+    sortColumnTasks,
+
+    // Custom field operations
+    fetchCustomFields
   };
 
   return (

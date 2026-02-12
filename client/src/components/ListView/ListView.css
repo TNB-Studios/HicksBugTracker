@@ -203,3 +203,24 @@
   text-align: center;
   color: #666;
 }
+
+/* Custom field columns */
+.task-list-header-custom-field {
+  width: 100px;
+  flex-shrink: 0;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-list-custom-field {
+  width: 100px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

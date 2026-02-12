@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext';
 import BoardPermissions from './BoardPermissions';
 import EmailRulesManager from './EmailRulesManager';
 import EmailConfigSection from './EmailConfigSection';
+import CustomFieldsManager from './CustomFieldsManager';
 
 function CollapsibleSection({ title, description, defaultOpen = true, children }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -30,6 +31,7 @@ function CollapsibleSection({ title, description, defaultOpen = true, children }
 export default function AdminSettings({ user: currentUser, onClose }) {
   const { deleteBoard } = useApp();
   const showUserPermissions = currentUser?.isAdmin;
+  const canManageCustomFields = currentUser?.isAdmin || currentUser?.permissions?.canManageCustomFields;
   const [users, setUsers] = useState([]);
   const [boards, setBoards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -96,7 +98,8 @@ export default function AdminSettings({ user: currentUser, onClose }) {
       await userApi.updatePermissions(userId, {
         canAdminBoards: newPermissions.canAdminBoards,
         canDeleteTasks: newPermissions.canDeleteTasks,
-        canManageEmailRules: newPermissions.canManageEmailRules
+        canManageEmailRules: newPermissions.canManageEmailRules,
+        canManageCustomFields: newPermissions.canManageCustomFields
       });
 
       setUsers(prev => prev.map(u =>
@@ -168,6 +171,7 @@ export default function AdminSettings({ user: currentUser, onClose }) {
                         <th>Can Admin Boards</th>
                         <th>Can Delete Tasks</th>
                         <th>Can Manage Email Rules</th>
+                        <th>Can Manage Custom Fields</th>
                         <th>Board Access</th>
                       </tr>
                     </thead>
@@ -204,6 +208,14 @@ export default function AdminSettings({ user: currentUser, onClose }) {
                                 checked={isAdmin || user.permissions.canManageEmailRules}
                                 disabled={isAdmin || saving[user.id]}
                                 onChange={e => handlePermissionChange(user.id, 'canManageEmailRules', e.target.checked)}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="checkbox"
+                                checked={isAdmin || user.permissions.canManageCustomFields}
+                                disabled={isAdmin || saving[user.id]}
+                                onChange={e => handlePermissionChange(user.id, 'canManageCustomFields', e.target.checked)}
                               />
                             </td>
                             <td>
@@ -286,6 +298,17 @@ export default function AdminSettings({ user: currentUser, onClose }) {
               >
                 <EmailRulesManager boards={boards} />
               </CollapsibleSection>
+
+              {/* Custom Task Parameters Section */}
+              {canManageCustomFields && (
+                <CollapsibleSection
+                  title="Custom Task Parameters"
+                  description="Define custom fields for tasks per board"
+                  defaultOpen={false}
+                >
+                  <CustomFieldsManager boards={boards} />
+                </CollapsibleSection>
+              )}
             </>
           )}
         </div>

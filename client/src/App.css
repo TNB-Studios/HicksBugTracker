@@ -587,6 +587,48 @@ body {
   border-top: 1px solid #f0f0f0;
 }
 
+/* Custom Fields on Task Card */
+.task-custom-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.task-custom-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: #f0f4f8;
+  border-radius: 12px;
+  font-size: 10px;
+  color: #5e6c84;
+}
+
+.task-custom-field .custom-field-name {
+  font-weight: 600;
+  color: #172b4d;
+}
+
+.task-custom-field .custom-field-value {
+  color: #5e6c84;
+}
+
+/* Custom Fields Section in TaskModal */
+.custom-fields-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #dfe1e6;
+}
+
+.custom-fields-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5e6c84;
+}
+
 /* Add Column */
 .add-column {
   min-width: 280px;

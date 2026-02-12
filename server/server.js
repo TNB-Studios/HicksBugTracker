@@ -17,6 +17,7 @@ const fileRoutes = require('./routes/files');
 const emailRuleRoutes = require('./routes/emailRules');
 const emailConfigRoutes = require('./routes/emailConfig');
 const userColumnOrderRoutes = require('./routes/userColumnOrders');
+const customFieldRoutes = require('./routes/customFields');
 
 // Connect to database
 connectDB();
@@ -125,6 +126,7 @@ app.get('/api/me', async (req, res) => {
         canAdminBoards: isAdmin || attributes.hicks_can_admin_boards || false,
         canDeleteTasks: isAdmin || attributes.hicks_can_delete_tasks || false,
         canManageEmailRules: isAdmin || attributes.hicks_can_manage_email_rules || false,
+        canManageCustomFields: isAdmin || attributes.hicks_can_manage_custom_fields || false,
         allowedBoards: attributes.hicks_allowed_boards || []
       }
     }
@@ -200,6 +202,7 @@ app.use('/api', requireApiAuth, fileRoutes);
 app.use('/api', requireApiAuth, emailRuleRoutes);
 app.use('/api/email-config', requireAdmin, emailConfigRoutes);
 app.use('/api/user-column-orders', requireApiAuth, userColumnOrderRoutes);
+app.use('/api', requireApiAuth, customFieldRoutes);
 
 // Serve static assets in production
 if (process.env.NODE_ENV === 'production') {

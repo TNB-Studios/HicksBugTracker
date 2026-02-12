@@ -5,6 +5,7 @@ import UserSelect from '../UserSelect/UserSelect';
 import RichTextEditor from '../RichTextEditor/RichTextEditor';
 import RichTextDisplay from '../RichTextDisplay/RichTextDisplay';
 import TagSelect from '../TagSelect/TagSelect';
+import CustomFieldInput from '../CustomFieldInput/CustomFieldInput';
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 const TYPES = ['Task', 'Bug', 'Suggestion'];
@@ -29,7 +30,8 @@ export default function TaskModal({ task: taskProp, onClose }) {
     removeFileFromTask,
     attachFilesToComment,
     removeFileFromComment,
-    user
+    user,
+    customFields
   } = useApp();
   const canDeleteTasks = user?.permissions?.canDeleteTasks || false;
   const isAdmin = user?.isAdmin || false;
@@ -46,7 +48,8 @@ export default function TaskModal({ task: taskProp, onClose }) {
     priority: 'Medium',
     taskType: 'Task',
     dependsOn: '',
-    tags: ''
+    tags: '',
+    customFields: {}
   });
 
   // Get available tasks for dependency dropdown (exclude current task)
@@ -59,10 +62,26 @@ export default function TaskModal({ task: taskProp, onClose }) {
     return Array.from(tagSet).sort();
   }, [tasks]);
 
+  // Get applicable custom fields for the current task type
+  const applicableCustomFields = useMemo(() => {
+    const taskType = formData.taskType || 'Task';
+    return (customFields || [])
+      .filter(field => field.appliesTo.includes(taskType))
+      .sort((a, b) => a.order - b.order);
+  }, [customFields, formData.taskType]);
+
   // Track if form has unsaved changes (only relevant for editing existing tasks)
   const isDirty = useMemo(() => {
     if (!task) return false; // New task - no dirty tracking needed
     const taskTags = (task.tags || []).join(', ');
+    // Compare custom fields
+    const taskCustomFields = task.customFields || {};
+    const formCustomFields = formData.customFields || {};
+    const customFieldsChanged = Object.keys({ ...taskCustomFields, ...formCustomFields }).some(key => {
+      const taskVal = taskCustomFields[key] || '';
+      const formVal = formCustomFields[key] || '';
+      return taskVal !== formVal;
+    });
     return (
       formData.name !== (task.name || '') ||
       formData.description !== (task.description || '') ||
@@ -71,7 +90,8 @@ export default function TaskModal({ task: taskProp, onClose }) {
       formData.priority !== (task.priority || 'Medium') ||
       formData.taskType !== (task.taskType || 'Task') ||
       formData.dependsOn !== (task.dependsOn || '') ||
-      formData.tags !== taskTags
+      formData.tags !== taskTags ||
+      customFieldsChanged
     );
   }, [formData, task]);
 
@@ -84,6 +104,11 @@ export default function TaskModal({ task: taskProp, onClose }) {
   useEffect(() => {
     if (task) {
       // Editing existing task - use task values
+      // Convert customFields from Map-like object to plain object
+      const taskCustomFields = task.customFields || {};
+      const customFieldsObj = typeof taskCustomFields.toJSON === 'function'
+        ? Object.fromEntries(taskCustomFields)
+        : { ...taskCustomFields };
       setFormData({
         name: task.name || '',
         description: task.description || '',
@@ -93,7 +118,8 @@ export default function TaskModal({ task: taskProp, onClose }) {
         priority: task.priority || 'Medium',
         taskType: task.taskType || 'Task',
         dependsOn: task.dependsOn || '',
-        tags: (task.tags || []).join(', ')
+        tags: (task.tags || []).join(', '),
+        customFields: customFieldsObj
       });
     } else if (columns.length > 0) {
       // New task - use cached assignedTo, auto-fill reportedBy with logged-in user
@@ -102,7 +128,8 @@ export default function TaskModal({ task: taskProp, onClose }) {
         ...prev,
         columnId: columns[0]._id,
         assignedTo: cachedAssignedTo,
-        reportedBy: user?.name || user?.email || ''
+        reportedBy: user?.name || user?.email || '',
+        customFields: {}
       }));
     }
   }, [task, columns, user]);
@@ -110,6 +137,16 @@ export default function TaskModal({ task: taskProp, onClose }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCustomFieldChange = (fieldId, value) => {
+    setFormData(prev => ({
+      ...prev,
+      customFields: {
+        ...prev.customFields,
+        [fieldId]: value
+      }
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -135,7 +172,8 @@ export default function TaskModal({ task: taskProp, onClose }) {
 
       const dataToSave = {
         ...formData,
-        tags: tagsArray
+        tags: tagsArray,
+        customFields: formData.customFields || {}
       };
 
       if (task) {
@@ -437,6 +475,20 @@ export default function TaskModal({ task: taskProp, onClose }) {
               placeholder="Enter tags separated by commas (e.g., frontend, urgent, v2.0)"
             />
           </div>
+
+          {applicableCustomFields.length > 0 && (
+            <div className="custom-fields-section">
+              <h4>Custom Fields</h4>
+              {applicableCustomFields.map(field => (
+                <CustomFieldInput
+                  key={field._id}
+                  field={field}
+                  value={formData.customFields?.[field._id] || ''}
+                  onChange={handleCustomFieldChange}
+                />
+              ))}
+            </div>
+          )}
 
           {task && (
             <div className="task-meta">

@@ -28,9 +28,17 @@ const typeColors = {
   'Suggestion': '#43a047'
 };
 
-export default function TaskCard({ task, onClick, onDoubleClick, allTasks = [], isSelected = false, registerTaskRef }) {
+export default function TaskCard({ task, onClick, onDoubleClick, allTasks = [], isSelected = false, registerTaskRef, customFields = [] }) {
   // Find the parent task name if there's a dependency
   const parentTask = task.dependsOn ? allTasks.find(t => t._id === task.dependsOn) : null;
+
+  // Get applicable custom fields to show on board
+  const visibleCustomFields = customFields
+    .filter(field => field.showOnBoard && field.appliesTo.includes(task.taskType || 'Task'))
+    .sort((a, b) => a.order - b.order);
+
+  // Get custom field values from task
+  const taskCustomFields = task.customFields || {};
   const {
     attributes,
     listeners,
@@ -128,6 +136,26 @@ export default function TaskCard({ task, onClick, onDoubleClick, allTasks = [], 
           {task.tags.map((tag, idx) => (
             <span key={idx} className="task-tag">{tag}</span>
           ))}
+        </div>
+      )}
+
+      {visibleCustomFields.length > 0 && (
+        <div className="task-custom-fields">
+          {visibleCustomFields.map(field => {
+            let value = taskCustomFields[field._id];
+            // For non-user-created fields, default to first option if no value set
+            if (!value && !field.allowUserCreatedOptions && field.options?.length > 0) {
+              const sortedOptions = [...field.options].sort((a, b) => a.order - b.order);
+              value = sortedOptions[0]?.value || '';
+            }
+            const displayValue = value || '—';
+            return (
+              <span key={field._id} className="task-custom-field">
+                <span className="custom-field-name">{field.name}:</span>
+                <span className="custom-field-value">{displayValue}</span>
+              </span>
+            );
+          })}
         </div>
       )}
 
